@@ -8,8 +8,12 @@
             <h2 class="headline">Dashboard</h2>
             <p class="subhead">Current climate conditions across all rooms with the latest readings at a glance.</p>
         </div>
-        <div class="pill">
-            Updated <span class="meta">{{.LastUpdated.Format "2006-01-02 15:04:05 UTC"}}</span>
+        <div class="hero-mark">
+            <img src="/static/logo.svg" alt="Atmos logo">
+            <div>
+                <div class="eyebrow" style="margin-bottom:4px;">Atmos</div>
+                <span>Updated <span class="meta">{{.LastUpdated.Format "2006-01-02 15:04:05 UTC"}}</span></span>
+            </div>
         </div>
     </section>
 
