@@ -1,19 +1,19 @@
 <svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="atmos-gradient" x1="20" y1="8" x2="108" y2="120" gradientUnits="userSpaceOnUse">
+    <linearGradient id="atmos-gradient" x1="18" y1="12" x2="116" y2="116" gradientUnits="userSpaceOnUse">
       <stop offset="0%" stop-color="#0f766e"/>
-      <stop offset="55%" stop-color="#1d4ed8"/>
+      <stop offset="52%" stop-color="#1d4ed8"/>
       <stop offset="100%" stop-color="#e07a2f"/>
     </linearGradient>
-    <radialGradient id="atmos-glow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(36 28) rotate(52) scale(72 72)">
-      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.65"/>
+    <radialGradient id="atmos-glow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(36 26) rotate(52) scale(80 80)">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.7"/>
       <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
     </radialGradient>
   </defs>
   <rect x="8" y="8" width="112" height="112" rx="32" fill="url(#atmos-gradient)"/>
   <rect x="8" y="8" width="112" height="112" rx="32" fill="url(#atmos-glow)"/>
-  <path d="M28 70C38 54 52 48 64 48C78 48 92 56 100 72" stroke="#ffffff" stroke-width="10" stroke-linecap="round"/>
-  <path d="M28 88C40 74 54 68 66 68C80 68 92 74 100 84" stroke="#ffffff" stroke-width="10" stroke-linecap="round" opacity="0.78"/>
-  <circle cx="46" cy="40" r="6" fill="#ffffff"/>
-  <circle cx="82" cy="36" r="4" fill="#ffffff" opacity="0.8"/>
+  <circle cx="64" cy="64" r="32" fill="none" stroke="#ffffff" stroke-width="8" opacity="0.9"/>
+  <path d="M40 70C48 56 58 52 64 52C74 52 84 58 92 70" stroke="#ffffff" stroke-width="8" stroke-linecap="round"/>
+  <path d="M46 86C54 76 60 72 66 72C76 72 84 76 90 84" stroke="#ffffff" stroke-width="6" stroke-linecap="round" opacity="0.75"/>
+  <path d="M64 24C74 32 78 40 78 50C78 60 72 70 64 78C56 70 50 60 50 50C50 40 54 32 64 24Z" fill="#ffffff" opacity="0.85"/>
 </svg>
