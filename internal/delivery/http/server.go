@@ -35,14 +35,22 @@ type Config struct {
 func NewServer(cfg Config, service MeasurementService) (*Server, error) {
 	// Load templates individually to avoid conflicts
 	templates := make(map[string]*template.Template)
+	funcMap := template.FuncMap{
+		"derefFloat": func(v *float64) float64 {
+			if v == nil {
+				return 0
+			}
+			return *v
+		},
+	}
 
-	dashboardTmpl, err := template.ParseFiles(fmt.Sprintf("%s/dashboard.html", cfg.TemplatesDir))
+	dashboardTmpl, err := template.New("dashboard.html").Funcs(funcMap).ParseFiles(fmt.Sprintf("%s/dashboard.html", cfg.TemplatesDir))
 	if err != nil {
 		return nil, fmt.Errorf("failed to load dashboard template: %w", err)
 	}
 	templates["dashboard.html"] = dashboardTmpl
 
-	roomDetailTmpl, err := template.ParseFiles(fmt.Sprintf("%s/room-detail.html", cfg.TemplatesDir))
+	roomDetailTmpl, err := template.New("room-detail.html").Funcs(funcMap).ParseFiles(fmt.Sprintf("%s/room-detail.html", cfg.TemplatesDir))
 	if err != nil {
 		return nil, fmt.Errorf("failed to load room-detail template: %w", err)
 	}

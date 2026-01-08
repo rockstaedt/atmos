@@ -42,7 +42,7 @@
                 {{if .Measurement.CO2}}
                 <div class="text-center p-4 bg-orange-50 rounded-lg">
                     <p class="text-gray-600 text-sm font-medium mb-1">CO₂</p>
-                    <p class="text-3xl font-bold text-orange-600">{{printf "%.0f" .Measurement.CO2}} ppm</p>
+                    <p class="text-3xl font-bold text-orange-600">{{printf "%.0f" (derefFloat .Measurement.CO2)}} ppm</p>
                 </div>
                 {{end}}
             </div>

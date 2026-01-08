@@ -43,7 +43,7 @@
                     {{if .CO2}}
                     <div class="flex justify-between items-center p-2 bg-orange-50 rounded">
                         <span class="text-gray-700 font-medium">CO₂:</span>
-                        <span class="text-xl font-semibold text-orange-600">{{printf "%.0f" .CO2}} ppm</span>
+                        <span class="text-xl font-semibold text-orange-600">{{printf "%.0f" (derefFloat .CO2)}} ppm</span>
                     </div>
                     {{end}}
                 </div>
