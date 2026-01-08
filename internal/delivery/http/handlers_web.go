@@ -1,6 +1,7 @@
 package http
 
 import (
+	"context"
 	"net/http"
 	"sort"
 	"time"
@@ -9,11 +10,10 @@ import (
 	"github.com/rockstaedt/atmos/internal/domain"
 )
 
-func (s *Server) handleDashboard(w http.ResponseWriter, r *http.Request) {
-	measurements, err := s.service.GetLatestMeasurements(r.Context())
+func (s *Server) buildDashboardDTO(ctx context.Context) (*application.DashboardDTO, error) {
+	measurements, err := s.service.GetLatestMeasurements(ctx)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return nil, err
 	}
 
 	// Convert to DTOs
@@ -40,9 +40,33 @@ func (s *Server) handleDashboard(w http.ResponseWriter, r *http.Request) {
 		LastUpdated: time.Now().UTC(),
 	}
 
+	return data, nil
+}
+
+func (s *Server) handleDashboard(w http.ResponseWriter, r *http.Request) {
+	data, err := s.buildDashboardDTO(r.Context())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	tmpl := s.templates["dashboard.html"]
 	if err := tmpl.ExecuteTemplate(w, "base", data); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func (s *Server) handleDashboardFragment(w http.ResponseWriter, r *http.Request) {
+	data, err := s.buildDashboardDTO(r.Context())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	tmpl := s.templates["dashboard-fragment.html"]
+	if err := tmpl.ExecuteTemplate(w, "dashboard-fragment", data); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }

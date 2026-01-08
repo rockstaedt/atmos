@@ -45,9 +45,11 @@ func NewServer(cfg Config, service MeasurementService) (*Server, error) {
 	}
 
 	basePath := fmt.Sprintf("%s/base.html", cfg.TemplatesDir)
+	dashboardFragmentPath := fmt.Sprintf("%s/partials/dashboard-fragment.html", cfg.TemplatesDir)
 	dashboardTmpl, err := template.New("base.html").Funcs(funcMap).ParseFiles(
 		basePath,
 		fmt.Sprintf("%s/dashboard.html", cfg.TemplatesDir),
+		dashboardFragmentPath,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load dashboard template: %w", err)
@@ -62,6 +64,14 @@ func NewServer(cfg Config, service MeasurementService) (*Server, error) {
 		return nil, fmt.Errorf("failed to load room-detail template: %w", err)
 	}
 	templates["room-detail.html"] = roomDetailTmpl
+
+	dashboardFragmentTmpl, err := template.New("dashboard-fragment.html").Funcs(funcMap).ParseFiles(
+		dashboardFragmentPath,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load dashboard fragment template: %w", err)
+	}
+	templates["dashboard-fragment.html"] = dashboardFragmentTmpl
 
 	s := &Server{
 		addr:      fmt.Sprintf(":%d", cfg.Port),
@@ -84,6 +94,7 @@ func (s *Server) routes(staticDir string) {
 	// Web UI endpoints
 	s.mux.HandleFunc("GET /", s.handleDashboard)
 	s.mux.HandleFunc("GET /rooms/{roomID}", s.handleRoomDetail)
+	s.mux.HandleFunc("GET /partials/dashboard", s.handleDashboardFragment)
 
 	// Static files
 	fs := http.FileServer(http.Dir(staticDir))
