@@ -6,44 +6,7 @@
 
 {{define "content"}}
 <main class="page">
-    <section class="hero fade-in">
-        <div>
-            <a href="/" class="button ghost">← Back to Dashboard</a>
-            <p class="eyebrow" style="margin-top:12px;">Room detail</p>
-            <h2 class="headline">{{.RoomName}}</h2>
-            <p class="subhead">Latest measurement captured at <span class="meta">{{.Measurement.Timestamp.Format "2006-01-02 15:04:05 UTC"}}</span>.</p>
-        </div>
-        <div class="pill">
-            Room ID <span class="meta">{{.RoomID}}</span>
-        </div>
-    </section>
-
-    <section class="section fade-in" style="margin-bottom:24px;">
-        <div class="card-header" style="margin-bottom:16px;">
-            <h3 class="card-title">Current Conditions</h3>
-            <span class="meta">Live snapshot</span>
-        </div>
-        <div class="grid cards" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
-            <div class="metric" style="flex-direction:column; align-items:flex-start; gap:6px;">
-                <span>Temperature</span>
-                <strong class="accent-cool">{{printf "%.1f" .Measurement.Temperature}}°C</strong>
-            </div>
-            <div class="metric" style="flex-direction:column; align-items:flex-start; gap:6px;">
-                <span>Humidity</span>
-                <strong class="accent">{{printf "%.1f" .Measurement.Humidity}}%</strong>
-            </div>
-            <div class="metric" style="flex-direction:column; align-items:flex-start; gap:6px;">
-                <span>Pressure</span>
-                <strong>{{printf "%.1f" .Measurement.Pressure}} hPa</strong>
-            </div>
-            {{if .Measurement.CO2}}
-            <div class="metric" style="flex-direction:column; align-items:flex-start; gap:6px;">
-                <span>CO₂</span>
-                <strong class="accent-warm">{{printf "%.0f" (derefFloat .Measurement.CO2)}} ppm</strong>
-            </div>
-            {{end}}
-        </div>
-    </section>
+    {{template "room-detail-fragment" .}}
 
     <section class="fade-in" style="margin-bottom:20px; display:flex; gap:12px; flex-wrap:wrap;">
         <button onclick="loadChart('24h')" id="btn-24h" class="button">Last 24 hours</button>
