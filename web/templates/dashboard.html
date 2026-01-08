@@ -1,88 +1,77 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - Atmos Climate Monitor</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-gray-50 min-h-screen">
-    <nav class="bg-blue-600 text-white p-4 shadow-lg">
-        <div class="container mx-auto">
-            <h1 class="text-2xl font-bold">Atmos Climate Monitor</h1>
-        </div>
-    </nav>
+{{define "title"}}Dashboard - Atmos Climate Monitor{{end}}
 
-    <main class="container mx-auto p-4 mt-6">
-        <div class="mb-6">
-            <h2 class="text-3xl font-bold text-gray-800">Dashboard</h2>
-            <p class="text-gray-600 mt-2">Current climate conditions across all rooms</p>
-        </div>
+{{define "content"}}
+<main class="container mx-auto p-4 mt-6">
+    <div class="mb-6">
+        <h2 class="text-3xl font-bold text-gray-800">Dashboard</h2>
+        <p class="text-gray-600 mt-2">Current climate conditions across all rooms</p>
+    </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {{range .Rooms}}
-            <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-xl transition-shadow">
-                <h2 class="text-xl font-semibold mb-4 text-gray-800">{{.Name}}</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {{range .Rooms}}
+        <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-xl transition-shadow">
+            <h2 class="text-xl font-semibold mb-4 text-gray-800">{{.Name}}</h2>
 
-                <div class="space-y-3">
-                    <div class="flex justify-between items-center p-2 bg-blue-50 rounded">
-                        <span class="text-gray-700 font-medium">Temperature:</span>
-                        <span class="text-2xl font-bold text-blue-600">{{printf "%.1f" .Temperature}}°C</span>
-                    </div>
-
-                    <div class="flex justify-between items-center p-2 bg-green-50 rounded">
-                        <span class="text-gray-700 font-medium">Humidity:</span>
-                        <span class="text-xl font-semibold text-green-600">{{printf "%.1f" .Humidity}}%</span>
-                    </div>
-
-                    <div class="flex justify-between items-center p-2 bg-purple-50 rounded">
-                        <span class="text-gray-700 font-medium">Pressure:</span>
-                        <span class="text-xl font-semibold text-purple-600">{{printf "%.1f" .Pressure}} hPa</span>
-                    </div>
-
-                    {{if .CO2}}
-                    <div class="flex justify-between items-center p-2 bg-orange-50 rounded">
-                        <span class="text-gray-700 font-medium">CO₂:</span>
-                        <span class="text-xl font-semibold text-orange-600">{{printf "%.0f" (derefFloat .CO2)}} ppm</span>
-                    </div>
-                    {{end}}
+            <div class="space-y-3">
+                <div class="flex justify-between items-center p-2 bg-blue-50 rounded">
+                    <span class="text-gray-700 font-medium">Temperature:</span>
+                    <span class="text-2xl font-bold text-blue-600">{{printf "%.1f" .Temperature}}°C</span>
                 </div>
 
-                <div class="mt-4 pt-4 border-t border-gray-200">
-                    <p class="text-sm text-gray-500">
-                        Updated: <span class="font-mono">{{.LastMeasurement.Format "15:04:05 UTC"}}</span>
-                    </p>
+                <div class="flex justify-between items-center p-2 bg-green-50 rounded">
+                    <span class="text-gray-700 font-medium">Humidity:</span>
+                    <span class="text-xl font-semibold text-green-600">{{printf "%.1f" .Humidity}}%</span>
                 </div>
 
-                <a href="/rooms/{{.ID}}"
-                   class="mt-4 block w-full text-center bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 transition-colors font-medium">
-                    View Details
-                </a>
+                <div class="flex justify-between items-center p-2 bg-purple-50 rounded">
+                    <span class="text-gray-700 font-medium">Pressure:</span>
+                    <span class="text-xl font-semibold text-purple-600">{{printf "%.1f" .Pressure}} hPa</span>
+                </div>
+
+                {{if .CO2}}
+                <div class="flex justify-between items-center p-2 bg-orange-50 rounded">
+                    <span class="text-gray-700 font-medium">CO₂:</span>
+                    <span class="text-xl font-semibold text-orange-600">{{printf "%.0f" (derefFloat .CO2)}} ppm</span>
+                </div>
+                {{end}}
             </div>
-            {{else}}
-            <div class="col-span-full text-center py-16">
-                <p class="text-xl text-gray-600 font-medium">No rooms registered yet</p>
-                <p class="mt-2 text-gray-500">Waiting for ESP32 sensors to send data...</p>
-                <div class="mt-6 max-w-md mx-auto bg-blue-50 p-4 rounded-lg">
-                    <p class="text-sm text-gray-700">
-                        <span class="font-semibold">Quick Start:</span> Configure your ESP32 to POST measurements to
-                        <code class="bg-white px-2 py-1 rounded text-xs">/api/measurements</code>
-                    </p>
-                </div>
+
+            <div class="mt-4 pt-4 border-t border-gray-200">
+                <p class="text-sm text-gray-500">
+                    Updated: <span class="font-mono">{{.LastMeasurement.Format "15:04:05 UTC"}}</span>
+                </p>
             </div>
-            {{end}}
+
+            <a href="/rooms/{{.ID}}"
+               class="mt-4 block w-full text-center bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 transition-colors font-medium">
+                View Details
+            </a>
         </div>
-    </main>
+        {{else}}
+        <div class="col-span-full text-center py-16">
+            <p class="text-xl text-gray-600 font-medium">No rooms registered yet</p>
+            <p class="mt-2 text-gray-500">Waiting for ESP32 sensors to send data...</p>
+            <div class="mt-6 max-w-md mx-auto bg-blue-50 p-4 rounded-lg">
+                <p class="text-sm text-gray-700">
+                    <span class="font-semibold">Quick Start:</span> Configure your ESP32 to POST measurements to
+                    <code class="bg-white px-2 py-1 rounded text-xs">/api/measurements</code>
+                </p>
+            </div>
+        </div>
+        {{end}}
+    </div>
+</main>
+{{end}}
 
-    <footer class="text-center text-gray-500 text-sm mt-12 mb-4">
-        <p>Last updated: <span class="font-mono">{{.LastUpdated.Format "2006-01-02 15:04:05 UTC"}}</span></p>
-    </footer>
+{{define "footer"}}
+<p>Last updated: <span class="font-mono">{{.LastUpdated.Format "2006-01-02 15:04:05 UTC"}}</span></p>
+{{end}}
 
-    <script>
-        // Auto-refresh every 30 seconds
-        setInterval(() => {
-            window.location.reload();
-        }, 30000);
-    </script>
-</body>
-</html>
+{{define "scripts"}}
+<script>
+    // Auto-refresh every 30 seconds
+    setInterval(() => {
+        window.location.reload();
+    }, 30000);
+</script>
+{{end}}

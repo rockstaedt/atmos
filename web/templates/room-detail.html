@@ -1,189 +1,172 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{.RoomName}} - Atmos Climate Monitor</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
-</head>
-<body class="bg-gray-50 min-h-screen">
-    <nav class="bg-blue-600 text-white p-4 shadow-lg">
-        <div class="container mx-auto">
-            <h1 class="text-2xl font-bold">Atmos Climate Monitor</h1>
-        </div>
-    </nav>
+{{define "title"}}{{.RoomName}} - Atmos Climate Monitor{{end}}
 
-    <main class="container mx-auto p-4 mt-6">
-        <div class="mb-6">
-            <a href="/" class="text-blue-600 hover:text-blue-800 transition-colors inline-flex items-center">
-                ← Back to Dashboard
-            </a>
-        </div>
+{{define "head"}}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+{{end}}
 
-        <h2 class="text-3xl font-bold mb-6 text-gray-800">{{.RoomName}}</h2>
+{{define "content"}}
+<main class="container mx-auto p-4 mt-6">
+    <div class="mb-6">
+        <a href="/" class="text-blue-600 hover:text-blue-800 transition-colors inline-flex items-center">
+            ← Back to Dashboard
+        </a>
+    </div>
 
-        <!-- Current values -->
-        <div class="bg-white rounded-lg shadow-md p-6 mb-8">
-            <h3 class="text-xl font-semibold mb-4 text-gray-800">Current Conditions</h3>
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
-                <div class="text-center p-4 bg-blue-50 rounded-lg">
-                    <p class="text-gray-600 text-sm font-medium mb-1">Temperature</p>
-                    <p class="text-3xl font-bold text-blue-600">{{printf "%.1f" .Measurement.Temperature}}°C</p>
-                </div>
-                <div class="text-center p-4 bg-green-50 rounded-lg">
-                    <p class="text-gray-600 text-sm font-medium mb-1">Humidity</p>
-                    <p class="text-3xl font-bold text-green-600">{{printf "%.1f" .Measurement.Humidity}}%</p>
-                </div>
-                <div class="text-center p-4 bg-purple-50 rounded-lg">
-                    <p class="text-gray-600 text-sm font-medium mb-1">Pressure</p>
-                    <p class="text-3xl font-bold text-purple-600">{{printf "%.1f" .Measurement.Pressure}} hPa</p>
-                </div>
-                {{if .Measurement.CO2}}
-                <div class="text-center p-4 bg-orange-50 rounded-lg">
-                    <p class="text-gray-600 text-sm font-medium mb-1">CO₂</p>
-                    <p class="text-3xl font-bold text-orange-600">{{printf "%.0f" (derefFloat .Measurement.CO2)}} ppm</p>
-                </div>
-                {{end}}
+    <h2 class="text-3xl font-bold mb-6 text-gray-800">{{.RoomName}}</h2>
+
+    <!-- Current values -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+        <h3 class="text-xl font-semibold mb-4 text-gray-800">Current Conditions</h3>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+            <div class="text-center p-4 bg-blue-50 rounded-lg">
+                <p class="text-gray-600 text-sm font-medium mb-1">Temperature</p>
+                <p class="text-3xl font-bold text-blue-600">{{printf "%.1f" .Measurement.Temperature}}°C</p>
             </div>
-        </div>
-
-        <!-- Time range selector -->
-        <div class="mb-6 flex gap-3 flex-wrap">
-            <button onclick="loadChart('24h')" id="btn-24h" class="px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium shadow-sm">
-                24 Hours
-            </button>
-            <button onclick="loadChart('7d')" id="btn-7d" class="px-5 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium shadow-sm">
-                7 Days
-            </button>
-        </div>
-
-        <!-- Charts -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-            <div class="bg-white rounded-lg shadow-md p-6">
-                <h3 class="text-lg font-semibold mb-4 text-gray-800">Temperature & Humidity</h3>
-                <canvas id="tempHumidityChart"></canvas>
+            <div class="text-center p-4 bg-green-50 rounded-lg">
+                <p class="text-gray-600 text-sm font-medium mb-1">Humidity</p>
+                <p class="text-3xl font-bold text-green-600">{{printf "%.1f" .Measurement.Humidity}}%</p>
             </div>
-
-            <div class="bg-white rounded-lg shadow-md p-6">
-                <h3 class="text-lg font-semibold mb-4 text-gray-800">Pressure</h3>
-                <canvas id="pressureChart"></canvas>
+            <div class="text-center p-4 bg-purple-50 rounded-lg">
+                <p class="text-gray-600 text-sm font-medium mb-1">Pressure</p>
+                <p class="text-3xl font-bold text-purple-600">{{printf "%.1f" .Measurement.Pressure}} hPa</p>
             </div>
+            {{if .Measurement.CO2}}
+            <div class="text-center p-4 bg-orange-50 rounded-lg">
+                <p class="text-gray-600 text-sm font-medium mb-1">CO₂</p>
+                <p class="text-3xl font-bold text-orange-600">{{printf "%.0f" (derefFloat .Measurement.CO2)}} ppm</p>
+            </div>
+            {{end}}
         </div>
-    </main>
+    </div>
 
-    <footer class="text-center text-gray-500 text-sm mt-12 mb-4">
-        <p>Room: {{.RoomID}}</p>
-    </footer>
+    <!-- Time range selector -->
+    <div class="mb-6 flex gap-3 flex-wrap">
+        <button onclick="loadChart('24h')" id="btn-24h" class="px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium shadow-sm">
+            24 Hours
+        </button>
+        <button onclick="loadChart('7d')" id="btn-7d" class="px-5 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium shadow-sm">
+            7 Days
+        </button>
+    </div>
 
-    <script>
-    let tempHumidityChart, pressureChart;
+    <!-- Charts -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-lg font-semibold mb-4 text-gray-800">Temperature & Humidity</h3>
+            <canvas id="tempHumidityChart"></canvas>
+        </div>
 
-    async function loadChart(range) {
-        // Update button states
-        document.querySelectorAll('[id^="btn-"]').forEach(btn => {
-            btn.classList.remove('bg-blue-600', 'text-white');
-            btn.classList.add('bg-gray-200', 'text-gray-700');
-        });
-        document.getElementById('btn-' + range).classList.remove('bg-gray-200', 'text-gray-700');
-        document.getElementById('btn-' + range).classList.add('bg-blue-600', 'text-white');
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-lg font-semibold mb-4 text-gray-800">Pressure</h3>
+            <canvas id="pressureChart"></canvas>
+        </div>
+    </div>
+</main>
+{{end}}
 
-        try {
-            const response = await fetch('/api/rooms/{{.RoomID}}/measurements?range=' + range);
-            const data = await response.json();
+{{define "footer"}}
+<p>Room: {{.RoomID}}</p>
+{{end}}
 
-            if (!data.labels || data.labels.length === 0) {
-                console.warn('No data available for range:', range);
-                return;
-            }
+{{define "scripts"}}
+<script>
+let tempHumidityChart, pressureChart;
 
-            // Convert UTC timestamps
-            const labels = data.labels.map(ts => {
-                const date = new Date(ts);
-                if (range === '24h') {
-                    return date.toISOString().substr(11, 5);
-                } else {
-                    return date.toISOString().substr(5, 11).replace('T', ' ');
-                }
-            });
+async function loadChart(range) {
+    // Update button states
+    document.querySelectorAll('[id^="btn-"]').forEach(btn => {
+        btn.classList.remove('bg-blue-600', 'text-white');
+        btn.classList.add('bg-gray-200', 'text-gray-700');
+    });
+    document.getElementById('btn-' + range).classList.remove('bg-gray-200', 'text-gray-700');
+    document.getElementById('btn-' + range).classList.add('bg-blue-600', 'text-white');
 
-            // Temperature & Humidity Chart
-            if (tempHumidityChart) tempHumidityChart.destroy();
-            const ctx1 = document.getElementById('tempHumidityChart').getContext('2d');
-            tempHumidityChart = new Chart(ctx1, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [
-                        {
-                            label: 'Temperature (°C)',
-                            data: data.temperature,
-                            borderColor: 'rgb(59, 130, 246)',
-                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                            yAxisID: 'y',
-                            tension: 0.4
-                        },
-                        {
-                            label: 'Humidity (%)',
-                            data: data.humidity,
-                            borderColor: 'rgb(34, 197, 94)',
-                            backgroundColor: 'rgba(34, 197, 94, 0.1)',
-                            yAxisID: 'y1',
-                            tension: 0.4
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    interaction: {
-                        mode: 'index',
-                        intersect: false,
-                    },
-                    scales: {
-                        y: {
-                            type: 'linear',
-                            position: 'left',
-                            title: { display: true, text: 'Temperature (°C)' }
-                        },
-                        y1: {
-                            type: 'linear',
-                            position: 'right',
-                            title: { display: true, text: 'Humidity (%)' },
-                            grid: { drawOnChartArea: false }
-                        }
-                    }
-                }
-            });
+    try {
+        const response = await fetch('/api/rooms/{{.RoomID}}/measurements?range=' + range);
+        const data = await response.json();
 
-            // Pressure Chart
-            if (pressureChart) pressureChart.destroy();
-            const ctx2 = document.getElementById('pressureChart').getContext('2d');
-            pressureChart = new Chart(ctx2, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Pressure (hPa)',
-                        data: data.pressure,
-                        borderColor: 'rgb(168, 85, 247)',
-                        backgroundColor: 'rgba(168, 85, 247, 0.1)',
-                        tension: 0.4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    scales: {
-                        y: { title: { display: true, text: 'Pressure (hPa)' } }
-                    }
-                }
-            });
-        } catch (error) {
-            console.error('Error loading chart data:', error);
+        if (!data.labels || data.labels.length === 0) {
+            console.warn('No data available for range:', range);
+            return;
         }
-    }
 
-    // Load 24h chart by default
-    loadChart('24h');
-    </script>
-</body>
-</html>
+        // Convert UTC timestamps
+        const labels = data.labels.map(ts => {
+            const date = new Date(ts);
+            if (range === '24h') {
+                return date.toISOString().substr(11, 5);
+            } else {
+                return date.toISOString().substr(5, 11).replace('T', ' ');
+            }
+        });
+
+        // Temperature & Humidity Chart
+        if (tempHumidityChart) tempHumidityChart.destroy();
+        const ctx1 = document.getElementById('tempHumidityChart').getContext('2d');
+        tempHumidityChart = new Chart(ctx1, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Temperature (°C)',
+                        data: data.temperature,
+                        borderColor: '#2563eb',
+                        backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    },
+                    {
+                        label: 'Humidity (%)',
+                        data: data.humidity,
+                        borderColor: '#16a34a',
+                        backgroundColor: 'rgba(22, 163, 74, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+
+        // Pressure Chart
+        if (pressureChart) pressureChart.destroy();
+        const ctx2 = document.getElementById('pressureChart').getContext('2d');
+        pressureChart = new Chart(ctx2, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Pressure (hPa)',
+                    data: data.pressure,
+                    borderColor: '#9333ea',
+                    backgroundColor: 'rgba(147, 51, 234, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Error loading chart data:', error);
+    }
+}
+
+// Load 24h data by default
+loadChart('24h');
+</script>
+{{end}}

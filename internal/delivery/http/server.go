@@ -44,13 +44,20 @@ func NewServer(cfg Config, service MeasurementService) (*Server, error) {
 		},
 	}
 
-	dashboardTmpl, err := template.New("dashboard.html").Funcs(funcMap).ParseFiles(fmt.Sprintf("%s/dashboard.html", cfg.TemplatesDir))
+	basePath := fmt.Sprintf("%s/base.html", cfg.TemplatesDir)
+	dashboardTmpl, err := template.New("base.html").Funcs(funcMap).ParseFiles(
+		basePath,
+		fmt.Sprintf("%s/dashboard.html", cfg.TemplatesDir),
+	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load dashboard template: %w", err)
 	}
 	templates["dashboard.html"] = dashboardTmpl
 
-	roomDetailTmpl, err := template.New("room-detail.html").Funcs(funcMap).ParseFiles(fmt.Sprintf("%s/room-detail.html", cfg.TemplatesDir))
+	roomDetailTmpl, err := template.New("base.html").Funcs(funcMap).ParseFiles(
+		basePath,
+		fmt.Sprintf("%s/room-detail.html", cfg.TemplatesDir),
+	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load room-detail template: %w", err)
 	}
