@@ -10,6 +10,12 @@ import (
 	"github.com/rockstaedt/atmos/internal/domain"
 )
 
+type roomDetailView struct {
+	RoomID      string
+	RoomName    string
+	Measurement *domain.Measurement
+}
+
 func (s *Server) buildDashboardDTO(ctx context.Context) (*application.DashboardDTO, error) {
 	measurements, err := s.service.GetLatestMeasurements(ctx)
 	if err != nil {
@@ -43,6 +49,24 @@ func (s *Server) buildDashboardDTO(ctx context.Context) (*application.DashboardD
 	return data, nil
 }
 
+func (s *Server) buildRoomDetailView(ctx context.Context, roomID string) (*roomDetailView, error) {
+	latest, err := s.service.GetLatestMeasurements(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	measurement, ok := latest[roomID]
+	if !ok {
+		return nil, nil
+	}
+
+	return &roomDetailView{
+		RoomID:      roomID,
+		RoomName:    roomID,
+		Measurement: measurement,
+	}, nil
+}
+
 func (s *Server) handleDashboard(w http.ResponseWriter, r *http.Request) {
 	data, err := s.buildDashboardDTO(r.Context())
 	if err != nil {
@@ -74,32 +98,39 @@ func (s *Server) handleDashboardFragment(w http.ResponseWriter, r *http.Request)
 func (s *Server) handleRoomDetail(w http.ResponseWriter, r *http.Request) {
 	roomID := r.PathValue("roomID")
 
-	// Get latest measurement for room info
-	latest, err := s.service.GetLatestMeasurements(r.Context())
+	data, err := s.buildRoomDetailView(r.Context(), roomID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
-	measurement, ok := latest[roomID]
-	if !ok {
+	if data == nil {
 		http.Error(w, "Room not found", http.StatusNotFound)
 		return
-	}
-
-	data := struct {
-		RoomID      string
-		RoomName    string
-		Measurement *domain.Measurement
-	}{
-		RoomID:      roomID,
-		RoomName:    roomID,
-		Measurement: measurement,
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	tmpl := s.templates["room-detail.html"]
 	if err := tmpl.ExecuteTemplate(w, "base", data); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func (s *Server) handleRoomDetailFragment(w http.ResponseWriter, r *http.Request) {
+	roomID := r.PathValue("roomID")
+
+	data, err := s.buildRoomDetailView(r.Context(), roomID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if data == nil {
+		http.Error(w, "Room not found", http.StatusNotFound)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	tmpl := s.templates["room-detail-fragment.html"]
+	if err := tmpl.ExecuteTemplate(w, "room-detail-fragment", data); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }

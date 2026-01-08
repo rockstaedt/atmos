@@ -46,6 +46,7 @@ func NewServer(cfg Config, service MeasurementService) (*Server, error) {
 
 	basePath := fmt.Sprintf("%s/base.html", cfg.TemplatesDir)
 	dashboardFragmentPath := fmt.Sprintf("%s/partials/dashboard-fragment.html", cfg.TemplatesDir)
+	roomDetailFragmentPath := fmt.Sprintf("%s/partials/room-detail-fragment.html", cfg.TemplatesDir)
 	dashboardTmpl, err := template.New("base.html").Funcs(funcMap).ParseFiles(
 		basePath,
 		fmt.Sprintf("%s/dashboard.html", cfg.TemplatesDir),
@@ -59,6 +60,7 @@ func NewServer(cfg Config, service MeasurementService) (*Server, error) {
 	roomDetailTmpl, err := template.New("base.html").Funcs(funcMap).ParseFiles(
 		basePath,
 		fmt.Sprintf("%s/room-detail.html", cfg.TemplatesDir),
+		roomDetailFragmentPath,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load room-detail template: %w", err)
@@ -72,6 +74,14 @@ func NewServer(cfg Config, service MeasurementService) (*Server, error) {
 		return nil, fmt.Errorf("failed to load dashboard fragment template: %w", err)
 	}
 	templates["dashboard-fragment.html"] = dashboardFragmentTmpl
+
+	roomDetailFragmentTmpl, err := template.New("room-detail-fragment.html").Funcs(funcMap).ParseFiles(
+		roomDetailFragmentPath,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load room detail fragment template: %w", err)
+	}
+	templates["room-detail-fragment.html"] = roomDetailFragmentTmpl
 
 	s := &Server{
 		addr:      fmt.Sprintf(":%d", cfg.Port),
@@ -95,6 +105,7 @@ func (s *Server) routes(staticDir string) {
 	s.mux.HandleFunc("GET /", s.handleDashboard)
 	s.mux.HandleFunc("GET /rooms/{roomID}", s.handleRoomDetail)
 	s.mux.HandleFunc("GET /partials/dashboard", s.handleDashboardFragment)
+	s.mux.HandleFunc("GET /partials/rooms/{roomID}", s.handleRoomDetailFragment)
 
 	// Static files
 	fs := http.FileServer(http.Dir(staticDir))
