@@ -5,23 +5,308 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{block "title" .}}Atmos Climate Monitor{{end}}</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #f6f2ec;
+            --ink: #1c1b18;
+            --muted: #6d6a64;
+            --surface: #ffffff;
+            --surface-2: #fdfaf6;
+            --accent: #0f766e;
+            --accent-strong: #0a5b55;
+            --accent-warm: #e07a2f;
+            --accent-cool: #1d4ed8;
+            --stroke: rgba(28, 27, 24, 0.12);
+            --shadow: 0 18px 40px rgba(27, 25, 20, 0.08);
+            --radius-lg: 24px;
+            --radius-md: 16px;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: "Space Grotesk", "Segoe UI", sans-serif;
+            color: var(--ink);
+            background: radial-gradient(circle at 20% -10%, #fff6e9 0%, transparent 45%),
+                        radial-gradient(circle at 90% 10%, #e4f4f1 0%, transparent 40%),
+                        var(--bg);
+        }
+
+        body::after {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background-image: linear-gradient(120deg, rgba(15, 118, 110, 0.12), transparent 60%);
+            opacity: 0.45;
+            pointer-events: none;
+        }
+
+        .site-shell {
+            position: relative;
+            z-index: 1;
+        }
+
+        .nav {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            backdrop-filter: blur(12px);
+            background: rgba(255, 255, 255, 0.7);
+            border-bottom: 1px solid rgba(28, 27, 24, 0.08);
+        }
+
+        .nav-inner {
+            max-width: 1160px;
+            margin: 0 auto;
+            padding: 20px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+        }
+
+        .brand-badge {
+            width: 36px;
+            height: 36px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #0f766e, #1d4ed8);
+            box-shadow: 0 10px 18px rgba(15, 118, 110, 0.25);
+        }
+
+        .brand span {
+            font-size: 1.1rem;
+        }
+
+        .page {
+            max-width: 1160px;
+            margin: 0 auto;
+            padding: 40px 24px 64px;
+        }
+
+        .hero {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: flex-end;
+            justify-content: space-between;
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+
+        .eyebrow {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.22em;
+            color: var(--muted);
+        }
+
+        h1, h2, h3 {
+            margin: 0;
+        }
+
+        .headline {
+            font-size: clamp(2rem, 4vw, 3rem);
+            font-weight: 700;
+        }
+
+        .subhead {
+            color: var(--muted);
+            max-width: 560px;
+            font-size: 1.05rem;
+            line-height: 1.5;
+        }
+
+        .pill {
+            background: var(--surface);
+            border: 1px solid var(--stroke);
+            border-radius: 999px;
+            padding: 10px 18px;
+            font-size: 0.95rem;
+            box-shadow: 0 10px 24px rgba(28, 27, 24, 0.06);
+        }
+
+        .grid {
+            display: grid;
+            gap: 24px;
+        }
+
+        .grid.cards {
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        }
+
+        .card {
+            background: var(--surface);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            border: 1px solid rgba(28, 27, 24, 0.08);
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 16px;
+        }
+
+        .card-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .meta {
+            font-family: "IBM Plex Mono", monospace;
+            font-size: 0.8rem;
+            color: var(--muted);
+        }
+
+        .metrics {
+            display: grid;
+            gap: 12px;
+        }
+
+        .metric {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 14px;
+            border-radius: var(--radius-md);
+            background: var(--surface-2);
+            border: 1px solid rgba(28, 27, 24, 0.06);
+        }
+
+        .metric span {
+            font-size: 0.95rem;
+        }
+
+        .metric strong {
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+
+        .metric .accent {
+            color: var(--accent);
+        }
+
+        .metric .accent-warm {
+            color: var(--accent-warm);
+        }
+
+        .metric .accent-cool {
+            color: var(--accent-cool);
+        }
+
+        .button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 16px;
+            border-radius: 12px;
+            border: none;
+            background: var(--accent);
+            color: #fff;
+            font-weight: 600;
+            text-decoration: none;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+            box-shadow: 0 12px 24px rgba(15, 118, 110, 0.25);
+        }
+
+        .button:hover {
+            background: var(--accent-strong);
+            transform: translateY(-1px);
+        }
+
+        .ghost {
+            background: transparent;
+            color: var(--accent);
+            border: 1px solid rgba(15, 118, 110, 0.35);
+            box-shadow: none;
+        }
+
+        .section {
+            background: rgba(255, 255, 255, 0.75);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            border: 1px solid rgba(28, 27, 24, 0.08);
+            box-shadow: var(--shadow);
+        }
+
+        .footer {
+            padding: 24px 24px 40px;
+            text-align: center;
+            color: var(--muted);
+            font-size: 0.9rem;
+        }
+
+        .footer .meta {
+            display: inline-flex;
+            gap: 8px;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.6s ease forwards;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(12px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 720px) {
+            .nav-inner {
+                padding: 16px 18px;
+            }
+
+            .page {
+                padding: 32px 18px 48px;
+            }
+        }
+    </style>
     {{block "head" .}}{{end}}
 </head>
-<body class="bg-gray-50 min-h-screen">
-    <nav class="bg-blue-600 text-white p-4 shadow-lg">
-        <div class="container mx-auto">
-            <h1 class="text-2xl font-bold">Atmos Climate Monitor</h1>
-        </div>
-    </nav>
+<body>
+    <div class="site-shell">
+        <nav class="nav">
+            <div class="nav-inner">
+                <div class="brand">
+                    <div class="brand-badge"></div>
+                    <span>Atmos Climate Monitor</span>
+                </div>
+            </div>
+        </nav>
 
-    {{block "content" .}}{{end}}
+        {{block "content" .}}{{end}}
 
-    <footer class="text-center text-gray-500 text-sm mt-12 mb-4">
-        {{block "footer" .}}{{end}}
-    </footer>
+        <footer class="footer">
+            {{block "footer" .}}{{end}}
+        </footer>
 
-    {{block "scripts" .}}{{end}}
+        {{block "scripts" .}}{{end}}
+    </div>
 </body>
 </html>
 {{end}}
