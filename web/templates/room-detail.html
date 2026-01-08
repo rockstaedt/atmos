@@ -1,301 +1,189 @@
-{{define "title"}}{{.RoomName}} - Atmos{{end}}
-
-{{define "content"}}
-<div class="mb-6">
-    <a href="/" class="text-blue-600 hover:text-blue-800 transition-colors inline-flex items-center">
-        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-        </svg>
-        Back to Dashboard
-    </a>
-</div>
-
-<h2 class="text-3xl font-bold mb-6 text-gray-800">{{.RoomName}}</h2>
-
-<!-- Current values -->
-<div class="bg-white rounded-lg shadow-md p-6 mb-8">
-    <h3 class="text-xl font-semibold mb-4 text-gray-800">Current Conditions</h3>
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
-        <div class="text-center p-4 bg-blue-50 rounded-lg">
-            <svg class="w-10 h-10 mx-auto mb-2 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M10 2a6 6 0 00-6 6c0 4.314 6 10 6 10s6-5.686 6-10a6 6 0 00-6-6zm0 9a3 3 0 110-6 3 3 0 010 6z"/>
-            </svg>
-            <p class="text-gray-600 text-sm font-medium mb-1">Temperature</p>
-            <p class="text-3xl font-bold text-blue-600">{{printf "%.1f" .Measurement.Temperature}}°C</p>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.RoomName}} - Atmos Climate Monitor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <nav class="bg-blue-600 text-white p-4 shadow-lg">
+        <div class="container mx-auto">
+            <h1 class="text-2xl font-bold">Atmos Climate Monitor</h1>
         </div>
-        <div class="text-center p-4 bg-green-50 rounded-lg">
-            <svg class="w-10 h-10 mx-auto mb-2 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
-            </svg>
-            <p class="text-gray-600 text-sm font-medium mb-1">Humidity</p>
-            <p class="text-3xl font-bold text-green-600">{{printf "%.1f" .Measurement.Humidity}}%</p>
+    </nav>
+
+    <main class="container mx-auto p-4 mt-6">
+        <div class="mb-6">
+            <a href="/" class="text-blue-600 hover:text-blue-800 transition-colors inline-flex items-center">
+                ← Back to Dashboard
+            </a>
         </div>
-        <div class="text-center p-4 bg-purple-50 rounded-lg">
-            <svg class="w-10 h-10 mx-auto mb-2 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M3 12v3c0 1.657 3.134 3 7 3s7-1.343 7-3v-3c0 1.657-3.134 3-7 3s-7-1.343-7-3z"/>
-                <path d="M3 7v3c0 1.657 3.134 3 7 3s7-1.343 7-3V7c0 1.657-3.134 3-7 3S3 8.657 3 7z"/>
-                <path d="M17 5c0 1.657-3.134 3-7 3S3 6.657 3 5s3.134-3 7-3 7 1.343 7 3z"/>
-            </svg>
-            <p class="text-gray-600 text-sm font-medium mb-1">Pressure</p>
-            <p class="text-3xl font-bold text-purple-600">{{printf "%.1f" .Measurement.Pressure}} hPa</p>
+
+        <h2 class="text-3xl font-bold mb-6 text-gray-800">{{.RoomName}}</h2>
+
+        <!-- Current values -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+            <h3 class="text-xl font-semibold mb-4 text-gray-800">Current Conditions</h3>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                <div class="text-center p-4 bg-blue-50 rounded-lg">
+                    <p class="text-gray-600 text-sm font-medium mb-1">Temperature</p>
+                    <p class="text-3xl font-bold text-blue-600">{{printf "%.1f" .Measurement.Temperature}}°C</p>
+                </div>
+                <div class="text-center p-4 bg-green-50 rounded-lg">
+                    <p class="text-gray-600 text-sm font-medium mb-1">Humidity</p>
+                    <p class="text-3xl font-bold text-green-600">{{printf "%.1f" .Measurement.Humidity}}%</p>
+                </div>
+                <div class="text-center p-4 bg-purple-50 rounded-lg">
+                    <p class="text-gray-600 text-sm font-medium mb-1">Pressure</p>
+                    <p class="text-3xl font-bold text-purple-600">{{printf "%.1f" .Measurement.Pressure}} hPa</p>
+                </div>
+                {{if .Measurement.CO2}}
+                <div class="text-center p-4 bg-orange-50 rounded-lg">
+                    <p class="text-gray-600 text-sm font-medium mb-1">CO₂</p>
+                    <p class="text-3xl font-bold text-orange-600">{{printf "%.0f" .Measurement.CO2}} ppm</p>
+                </div>
+                {{end}}
+            </div>
         </div>
-        {{if .Measurement.CO2}}
-        <div class="text-center p-4 bg-orange-50 rounded-lg">
-            <svg class="w-10 h-10 mx-auto mb-2 text-orange-600" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M12 1.586l-4 4v12.828l4-4V1.586zM3.707 3.293A1 1 0 002 4v10a1 1 0 00.293.707L6 18.414V5.586L3.707 3.293zM17.707 5.293L14 1.586v12.828l2.293 2.293A1 1 0 0018 16V6a1 1 0 00-.293-.707z" clip-rule="evenodd"/>
-            </svg>
-            <p class="text-gray-600 text-sm font-medium mb-1">CO₂</p>
-            <p class="text-3xl font-bold text-orange-600">{{printf "%.0f" .Measurement.CO2}} ppm</p>
+
+        <!-- Time range selector -->
+        <div class="mb-6 flex gap-3 flex-wrap">
+            <button onclick="loadChart('24h')" id="btn-24h" class="px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium shadow-sm">
+                24 Hours
+            </button>
+            <button onclick="loadChart('7d')" id="btn-7d" class="px-5 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium shadow-sm">
+                7 Days
+            </button>
         </div>
-        {{end}}
-    </div>
-</div>
 
-<!-- Time range selector -->
-<div class="mb-6 flex gap-3 flex-wrap">
-    <button onclick="loadChart('24h')" id="btn-24h" class="px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium shadow-sm">
-        24 Hours
-    </button>
-    <button onclick="loadChart('7d')" id="btn-7d" class="px-5 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium shadow-sm">
-        7 Days
-    </button>
-    <button onclick="loadChart('30d')" id="btn-30d" class="px-5 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium shadow-sm">
-        30 Days
-    </button>
-</div>
+        <!-- Charts -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h3 class="text-lg font-semibold mb-4 text-gray-800">Temperature & Humidity</h3>
+                <canvas id="tempHumidityChart"></canvas>
+            </div>
 
-<!-- Charts -->
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-    <div class="bg-white rounded-lg shadow-md p-6">
-        <h3 class="text-lg font-semibold mb-4 text-gray-800">Temperature & Humidity</h3>
-        <canvas id="tempHumidityChart"></canvas>
-    </div>
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h3 class="text-lg font-semibold mb-4 text-gray-800">Pressure</h3>
+                <canvas id="pressureChart"></canvas>
+            </div>
+        </div>
+    </main>
 
-    <div class="bg-white rounded-lg shadow-md p-6">
-        <h3 class="text-lg font-semibold mb-4 text-gray-800">Pressure</h3>
-        <canvas id="pressureChart"></canvas>
-    </div>
-</div>
+    <footer class="text-center text-gray-500 text-sm mt-12 mb-4">
+        <p>Room: {{.RoomID}}</p>
+    </footer>
 
-{{if .Measurement.CO2}}
-<div class="grid grid-cols-1 gap-6 mb-8">
-    <div class="bg-white rounded-lg shadow-md p-6">
-        <h3 class="text-lg font-semibold mb-4 text-gray-800">CO₂ Levels</h3>
-        <canvas id="co2Chart"></canvas>
-    </div>
-</div>
-{{end}}
+    <script>
+    let tempHumidityChart, pressureChart;
 
-<script>
-let tempHumidityChart, pressureChart, co2Chart;
-let currentRange = '24h';
-
-async function loadChart(range) {
-    currentRange = range;
-
-    // Update button states
-    document.querySelectorAll('[id^="btn-"]').forEach(btn => {
-        btn.classList.remove('bg-blue-600', 'text-white');
-        btn.classList.add('bg-gray-200', 'text-gray-700');
-    });
-    document.getElementById('btn-' + range).classList.remove('bg-gray-200', 'text-gray-700');
-    document.getElementById('btn-' + range).classList.add('bg-blue-600', 'text-white');
-
-    try {
-        const response = await fetch('/api/rooms/{{.RoomID}}/measurements?range=' + range);
-        const data = await response.json();
-
-        if (!data.labels || data.labels.length === 0) {
-            console.warn('No data available for range:', range);
-            return;
-        }
-
-        // Convert UTC timestamps to readable format
-        const labels = data.labels.map(ts => {
-            const date = new Date(ts);
-            if (range === '24h') {
-                // Show time in HH:MM format
-                return date.toISOString().substr(11, 5);
-            } else if (range === '7d') {
-                // Show date and time
-                return date.toISOString().substr(5, 11).replace('T', ' ');
-            } else {
-                // Show date only
-                return date.toISOString().substr(5, 5);
-            }
+    async function loadChart(range) {
+        // Update button states
+        document.querySelectorAll('[id^="btn-"]').forEach(btn => {
+            btn.classList.remove('bg-blue-600', 'text-white');
+            btn.classList.add('bg-gray-200', 'text-gray-700');
         });
+        document.getElementById('btn-' + range).classList.remove('bg-gray-200', 'text-gray-700');
+        document.getElementById('btn-' + range).classList.add('bg-blue-600', 'text-white');
 
-        // Temperature & Humidity Chart
-        if (tempHumidityChart) tempHumidityChart.destroy();
-        const ctx1 = document.getElementById('tempHumidityChart').getContext('2d');
-        tempHumidityChart = new Chart(ctx1, {
-            type: 'line',
-            data: {
-                labels: labels,
-                datasets: [
-                    {
-                        label: 'Temperature (°C)',
-                        data: data.temperature,
-                        borderColor: 'rgb(59, 130, 246)',
-                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                        yAxisID: 'y',
-                        tension: 0.4
-                    },
-                    {
-                        label: 'Humidity (%)',
-                        data: data.humidity,
-                        borderColor: 'rgb(34, 197, 94)',
-                        backgroundColor: 'rgba(34, 197, 94, 0.1)',
-                        yAxisID: 'y1',
-                        tension: 0.4
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: true,
-                interaction: {
-                    mode: 'index',
-                    intersect: false,
-                },
-                scales: {
-                    y: {
-                        type: 'linear',
-                        position: 'left',
-                        title: {
-                            display: true,
-                            text: 'Temperature (°C)',
-                            color: 'rgb(59, 130, 246)',
-                            font: { weight: 'bold' }
-                        },
-                        ticks: {
-                            color: 'rgb(59, 130, 246)'
-                        }
-                    },
-                    y1: {
-                        type: 'linear',
-                        position: 'right',
-                        title: {
-                            display: true,
-                            text: 'Humidity (%)',
-                            color: 'rgb(34, 197, 94)',
-                            font: { weight: 'bold' }
-                        },
-                        ticks: {
-                            color: 'rgb(34, 197, 94)'
-                        },
-                        grid: {
-                            drawOnChartArea: false
-                        }
-                    }
-                },
-                plugins: {
-                    legend: {
-                        display: true,
-                        position: 'top'
-                    }
+        try {
+            const response = await fetch('/api/rooms/{{.RoomID}}/measurements?range=' + range);
+            const data = await response.json();
+
+            if (!data.labels || data.labels.length === 0) {
+                console.warn('No data available for range:', range);
+                return;
+            }
+
+            // Convert UTC timestamps
+            const labels = data.labels.map(ts => {
+                const date = new Date(ts);
+                if (range === '24h') {
+                    return date.toISOString().substr(11, 5);
+                } else {
+                    return date.toISOString().substr(5, 11).replace('T', ' ');
                 }
-            }
-        });
+            });
 
-        // Pressure Chart
-        if (pressureChart) pressureChart.destroy();
-        const ctx2 = document.getElementById('pressureChart').getContext('2d');
-        pressureChart = new Chart(ctx2, {
-            type: 'line',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Pressure (hPa)',
-                    data: data.pressure,
-                    borderColor: 'rgb(168, 85, 247)',
-                    backgroundColor: 'rgba(168, 85, 247, 0.1)',
-                    tension: 0.4
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: true,
-                interaction: {
-                    mode: 'index',
-                    intersect: false,
-                },
-                scales: {
-                    y: {
-                        title: {
-                            display: true,
-                            text: 'Pressure (hPa)',
-                            color: 'rgb(168, 85, 247)',
-                            font: { weight: 'bold' }
-                        },
-                        ticks: {
-                            color: 'rgb(168, 85, 247)'
-                        }
-                    }
-                },
-                plugins: {
-                    legend: {
-                        display: true,
-                        position: 'top'
-                    }
-                }
-            }
-        });
-
-        // CO₂ Chart (if available)
-        {{if .Measurement.CO2}}
-        if (data.co2 && data.co2.length > 0) {
-            if (co2Chart) co2Chart.destroy();
-            const ctx3 = document.getElementById('co2Chart').getContext('2d');
-            co2Chart = new Chart(ctx3, {
+            // Temperature & Humidity Chart
+            if (tempHumidityChart) tempHumidityChart.destroy();
+            const ctx1 = document.getElementById('tempHumidityChart').getContext('2d');
+            tempHumidityChart = new Chart(ctx1, {
                 type: 'line',
                 data: {
                     labels: labels,
-                    datasets: [{
-                        label: 'CO₂ (ppm)',
-                        data: data.co2,
-                        borderColor: 'rgb(249, 115, 22)',
-                        backgroundColor: 'rgba(249, 115, 22, 0.1)',
-                        tension: 0.4
-                    }]
+                    datasets: [
+                        {
+                            label: 'Temperature (°C)',
+                            data: data.temperature,
+                            borderColor: 'rgb(59, 130, 246)',
+                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                            yAxisID: 'y',
+                            tension: 0.4
+                        },
+                        {
+                            label: 'Humidity (%)',
+                            data: data.humidity,
+                            borderColor: 'rgb(34, 197, 94)',
+                            backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                            yAxisID: 'y1',
+                            tension: 0.4
+                        }
+                    ]
                 },
                 options: {
                     responsive: true,
-                    maintainAspectRatio: true,
                     interaction: {
                         mode: 'index',
                         intersect: false,
                     },
                     scales: {
                         y: {
-                            title: {
-                                display: true,
-                                text: 'CO₂ (ppm)',
-                                color: 'rgb(249, 115, 22)',
-                                font: { weight: 'bold' }
-                            },
-                            ticks: {
-                                color: 'rgb(249, 115, 22)'
-                            }
-                        }
-                    },
-                    plugins: {
-                        legend: {
-                            display: true,
-                            position: 'top'
+                            type: 'linear',
+                            position: 'left',
+                            title: { display: true, text: 'Temperature (°C)' }
+                        },
+                        y1: {
+                            type: 'linear',
+                            position: 'right',
+                            title: { display: true, text: 'Humidity (%)' },
+                            grid: { drawOnChartArea: false }
                         }
                     }
                 }
             });
+
+            // Pressure Chart
+            if (pressureChart) pressureChart.destroy();
+            const ctx2 = document.getElementById('pressureChart').getContext('2d');
+            pressureChart = new Chart(ctx2, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Pressure (hPa)',
+                        data: data.pressure,
+                        borderColor: 'rgb(168, 85, 247)',
+                        backgroundColor: 'rgba(168, 85, 247, 0.1)',
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: { title: { display: true, text: 'Pressure (hPa)' } }
+                    }
+                }
+            });
+        } catch (error) {
+            console.error('Error loading chart data:', error);
         }
-        {{end}}
-
-    } catch (error) {
-        console.error('Error loading chart data:', error);
     }
-}
 
-// Load 24h chart by default
-loadChart('24h');
-</script>
-{{end}}
+    // Load 24h chart by default
+    loadChart('24h');
+    </script>
+</body>
+</html>

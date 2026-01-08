@@ -22,7 +22,7 @@ type MeasurementService interface {
 type Server struct {
 	addr      string
 	service   MeasurementService
-	templates *template.Template
+	templates map[string]*template.Template
 	mux       *http.ServeMux
 }
 
@@ -33,12 +33,20 @@ type Config struct {
 }
 
 func NewServer(cfg Config, service MeasurementService) (*Server, error) {
-	// Load templates
-	templatesPattern := fmt.Sprintf("%s/*.html", cfg.TemplatesDir)
-	templates, err := template.ParseGlob(templatesPattern)
+	// Load templates individually to avoid conflicts
+	templates := make(map[string]*template.Template)
+
+	dashboardTmpl, err := template.ParseFiles(fmt.Sprintf("%s/dashboard.html", cfg.TemplatesDir))
 	if err != nil {
-		return nil, fmt.Errorf("failed to load templates: %w", err)
+		return nil, fmt.Errorf("failed to load dashboard template: %w", err)
 	}
+	templates["dashboard.html"] = dashboardTmpl
+
+	roomDetailTmpl, err := template.ParseFiles(fmt.Sprintf("%s/room-detail.html", cfg.TemplatesDir))
+	if err != nil {
+		return nil, fmt.Errorf("failed to load room-detail template: %w", err)
+	}
+	templates["room-detail.html"] = roomDetailTmpl
 
 	s := &Server{
 		addr:      fmt.Sprintf(":%d", cfg.Port),
