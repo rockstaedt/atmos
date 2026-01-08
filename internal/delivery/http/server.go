@@ -8,12 +8,20 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/rockstaedt/atmos/internal/application"
+	"github.com/rockstaedt/atmos/internal/domain"
 )
+
+// MeasurementService defines the interface for measurement operations
+type MeasurementService interface {
+	RecordMeasurement(ctx context.Context, m *domain.Measurement) error
+	GetLatestMeasurements(ctx context.Context) (map[string]*domain.Measurement, error)
+	GetMeasurementHistory(ctx context.Context, roomID string, duration time.Duration) ([]*domain.Measurement, error)
+	GetAllRooms(ctx context.Context) ([]*domain.Room, error)
+}
 
 type Server struct {
 	addr      string
-	service   *application.MeasurementService
+	service   MeasurementService
 	templates *template.Template
 	mux       *http.ServeMux
 }
@@ -24,7 +32,7 @@ type Config struct {
 	StaticDir    string
 }
 
-func NewServer(cfg Config, service *application.MeasurementService) (*Server, error) {
+func NewServer(cfg Config, service MeasurementService) (*Server, error) {
 	// Load templates
 	templatesPattern := fmt.Sprintf("%s/*.html", cfg.TemplatesDir)
 	templates, err := template.ParseGlob(templatesPattern)
