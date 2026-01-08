@@ -2,78 +2,11 @@
 
 {{define "content"}}
 <main class="page">
-    <section class="hero fade-in">
-        <div>
-            <p class="eyebrow">Live climate</p>
-            <h2 class="headline">Dashboard</h2>
-            <p class="subhead">Current climate conditions across all rooms with the latest readings at a glance.</p>
-        </div>
-        <div class="hero-mark">
-            <img src="/static/logo.svg" alt="Atmos logo">
-            <div>
-                <div class="eyebrow" style="margin-bottom:4px;">Atmos</div>
-                <span>Updated <span class="meta">{{.LastUpdated.Format "2006-01-02 15:04:05 UTC"}}</span></span>
-            </div>
-        </div>
-    </section>
-
-    <div class="grid cards fade-in">
-        {{range .Rooms}}
-        <article class="card">
-            <div class="card-header">
-                <div>
-                    <h3 class="card-title">{{.Name}}</h3>
-                    <div class="meta">Updated {{.LastMeasurement.Format "15:04:05 UTC"}}</div>
-                </div>
-                <div class="pill">Room</div>
-            </div>
-
-            <div class="metrics">
-                <div class="metric">
-                    <span>Temperature</span>
-                    <strong class="accent-cool">{{printf "%.1f" .Temperature}}°C</strong>
-                </div>
-                <div class="metric">
-                    <span>Humidity</span>
-                    <strong class="accent">{{printf "%.1f" .Humidity}}%</strong>
-                </div>
-                <div class="metric">
-                    <span>Pressure</span>
-                    <strong>{{printf "%.1f" .Pressure}} hPa</strong>
-                </div>
-                {{if .CO2}}
-                <div class="metric">
-                    <span>CO₂</span>
-                    <strong class="accent-warm">{{printf "%.0f" (derefFloat .CO2)}} ppm</strong>
-                </div>
-                {{end}}
-            </div>
-
-            <a href="/rooms/{{.ID}}" class="button">View Details</a>
-        </article>
-        {{else}}
-        <section class="section" style="text-align:center;">
-            <p class="card-title">No rooms registered yet</p>
-            <p class="subhead">Waiting for ESP32 sensors to send data...</p>
-            <div class="pill" style="display:inline-flex; margin-top:16px;">
-                Quick start: POST measurements to <span class="meta">/api/measurements</span>
-            </div>
-        </section>
-        {{end}}
-    </div>
+    {{template "dashboard-fragment" .}}
 </main>
 {{end}}
 
 {{define "footer"}}
 <span class="meta">Last updated</span>
 <span class="meta">{{.LastUpdated.Format "2006-01-02 15:04:05 UTC"}}</span>
-{{end}}
-
-{{define "scripts"}}
-<script>
-    // Auto-refresh every 30 seconds
-    setInterval(() => {
-        window.location.reload();
-    }, 30000);
-</script>
 {{end}}
