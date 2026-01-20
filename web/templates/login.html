@@ -1,0 +1,133 @@
+{{define "title"}}Login - Atmos Climate Monitor{{end}}
+
+{{define "content"}}
+<main class="page">
+    <div class="login-container fade-in">
+        <div class="login-card">
+            <div class="login-header">
+                <img class="login-logo" src="/static/logo.svg" alt="Atmos logo">
+                <h1>Welcome to Atmos</h1>
+                <p class="subhead">Enter your access key to view the dashboard</p>
+            </div>
+
+            {{if .Error}}
+            <div class="error-message">
+                {{.Error}}
+            </div>
+            {{end}}
+
+            <form method="POST" action="/login" class="login-form">
+                <div class="form-group">
+                    <label for="key">Access Key</label>
+                    <input
+                        type="password"
+                        id="key"
+                        name="key"
+                        placeholder="Paste your access key"
+                        autocomplete="current-password"
+                        required>
+                </div>
+                <button type="submit" class="button login-button">
+                    Sign In
+                </button>
+            </form>
+        </div>
+    </div>
+</main>
+{{end}}
+
+{{define "head"}}
+<style>
+    .login-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 60vh;
+    }
+
+    .login-card {
+        background: var(--surface);
+        border-radius: var(--radius-lg);
+        padding: 48px 40px;
+        border: 1px solid rgba(28, 27, 24, 0.08);
+        box-shadow: var(--shadow);
+        width: 100%;
+        max-width: 420px;
+    }
+
+    .login-header {
+        text-align: center;
+        margin-bottom: 32px;
+    }
+
+    .login-logo {
+        width: 64px;
+        height: 64px;
+        margin-bottom: 20px;
+        border-radius: 16px;
+        box-shadow: 0 10px 18px rgba(15, 118, 110, 0.25);
+    }
+
+    .login-header h1 {
+        font-size: 1.5rem;
+        margin-bottom: 8px;
+    }
+
+    .login-header .subhead {
+        font-size: 0.95rem;
+        margin: 0;
+    }
+
+    .error-message {
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+        color: #dc2626;
+        padding: 12px 16px;
+        border-radius: 12px;
+        font-size: 0.9rem;
+        margin-bottom: 24px;
+        text-align: center;
+    }
+
+    .login-form {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .form-group label {
+        font-size: 0.9rem;
+        font-weight: 500;
+        color: var(--muted);
+    }
+
+    .form-group input {
+        padding: 14px 16px;
+        border-radius: 12px;
+        border: 1px solid var(--stroke);
+        background: var(--surface-2);
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 0.95rem;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .form-group input:focus {
+        outline: none;
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.15);
+    }
+
+    .login-button {
+        width: 100%;
+        padding: 14px;
+        font-size: 1rem;
+        margin-top: 8px;
+    }
+</style>
+{{end}}
