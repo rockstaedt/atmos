@@ -46,12 +46,17 @@ func run() error {
 	if apiKey == "" {
 		return fmt.Errorf("API_KEY environment variable is required")
 	}
+	dashboardKey := os.Getenv("DASHBOARD_KEY")
+	if dashboardKey == "" {
+		return fmt.Errorf("DASHBOARD_KEY environment variable is required")
+	}
 
 	server, err := http.NewServer(http.Config{
 		Port:         port,
 		TemplatesDir: templatesDir,
 		StaticDir:    staticDir,
 		APIKey:       apiKey,
+		DashboardKey: dashboardKey,
 	}, measurementService)
 	if err != nil {
 		return fmt.Errorf("failed to initialize server: %w", err)

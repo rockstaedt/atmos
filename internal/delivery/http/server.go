@@ -2,6 +2,7 @@ package http
 
 import (
 	"context"
+	"crypto/subtle"
 	"fmt"
 	"html/template"
 	"log"
@@ -10,6 +11,8 @@ import (
 
 	"github.com/rockstaedt/atmos/internal/domain"
 )
+
+const sessionCookieName = "atmos_session"
 
 // MeasurementService defines the interface for measurement operations
 type MeasurementService interface {
@@ -20,11 +23,12 @@ type MeasurementService interface {
 }
 
 type Server struct {
-	addr      string
-	service   MeasurementService
-	templates map[string]*template.Template
-	mux       *http.ServeMux
-	apiKey    string
+	addr         string
+	service      MeasurementService
+	templates    map[string]*template.Template
+	mux          *http.ServeMux
+	apiKey       string
+	dashboardKey string
 }
 
 type Config struct {
@@ -32,6 +36,7 @@ type Config struct {
 	TemplatesDir string
 	StaticDir    string
 	APIKey       string
+	DashboardKey string
 }
 
 func NewServer(cfg Config, service MeasurementService) (*Server, error) {
@@ -85,12 +90,22 @@ func NewServer(cfg Config, service MeasurementService) (*Server, error) {
 	}
 	templates["room-detail-fragment.html"] = roomDetailFragmentTmpl
 
+	loginTmpl, err := template.New("base.html").Funcs(funcMap).ParseFiles(
+		basePath,
+		fmt.Sprintf("%s/login.html", cfg.TemplatesDir),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load login template: %w", err)
+	}
+	templates["login.html"] = loginTmpl
+
 	s := &Server{
-		addr:      fmt.Sprintf(":%d", cfg.Port),
-		service:   service,
-		templates: templates,
-		mux:       http.NewServeMux(),
-		apiKey:    cfg.APIKey,
+		addr:         fmt.Sprintf(":%d", cfg.Port),
+		service:      service,
+		templates:    templates,
+		mux:          http.NewServeMux(),
+		apiKey:       cfg.APIKey,
+		dashboardKey: cfg.DashboardKey,
 	}
 
 	s.routes(cfg.StaticDir)
@@ -104,11 +119,16 @@ func (s *Server) routes(staticDir string) {
 	s.mux.HandleFunc("GET /api/rooms", s.requireAPIKey(s.handleGetRooms))
 	s.mux.HandleFunc("GET /api/rooms/{roomID}/measurements", s.requireAPIKey(s.handleGetMeasurements))
 
-	// Web UI endpoints
-	s.mux.HandleFunc("GET /", s.handleDashboard)
-	s.mux.HandleFunc("GET /rooms/{roomID}", s.handleRoomDetail)
-	s.mux.HandleFunc("GET /partials/dashboard", s.handleDashboardFragment)
-	s.mux.HandleFunc("GET /partials/rooms/{roomID}", s.handleRoomDetailFragment)
+	// Authentication endpoints
+	s.mux.HandleFunc("GET /login", s.handleLoginPage)
+	s.mux.HandleFunc("POST /login", s.handleLogin)
+	s.mux.HandleFunc("POST /logout", s.handleLogout)
+
+	// Web UI endpoints (protected by dashboard auth)
+	s.mux.HandleFunc("GET /", s.requireDashboardAuth(s.handleDashboard))
+	s.mux.HandleFunc("GET /rooms/{roomID}", s.requireDashboardAuth(s.handleRoomDetail))
+	s.mux.HandleFunc("GET /partials/dashboard", s.requireDashboardAuth(s.handleDashboardFragment))
+	s.mux.HandleFunc("GET /partials/rooms/{roomID}", s.requireDashboardAuth(s.handleRoomDetailFragment))
 
 	// Static files
 	fs := http.FileServer(http.Dir(staticDir))
@@ -159,4 +179,75 @@ func (s *Server) requireAPIKey(next http.HandlerFunc) http.HandlerFunc {
 
 		next(w, r)
 	}
+}
+
+// requireDashboardAuth wraps a handler with dashboard session authentication
+func (s *Server) requireDashboardAuth(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		cookie, err := r.Cookie(sessionCookieName)
+		if err != nil || !s.isValidSession(cookie.Value) {
+			http.Redirect(w, r, "/login", http.StatusSeeOther)
+			return
+		}
+		next(w, r)
+	}
+}
+
+// isValidSession checks if the session cookie value is valid
+func (s *Server) isValidSession(sessionValue string) bool {
+	return subtle.ConstantTimeCompare([]byte(sessionValue), []byte(s.dashboardKey)) == 1
+}
+
+func (s *Server) handleLoginPage(w http.ResponseWriter, r *http.Request) {
+	// If already logged in, redirect to dashboard
+	if cookie, err := r.Cookie(sessionCookieName); err == nil && s.isValidSession(cookie.Value) {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+
+	data := map[string]interface{}{
+		"Error": nil,
+	}
+	s.templates["login.html"].ExecuteTemplate(w, "base", data)
+}
+
+func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Bad request", http.StatusBadRequest)
+		return
+	}
+
+	key := r.FormValue("key")
+	if subtle.ConstantTimeCompare([]byte(key), []byte(s.dashboardKey)) != 1 {
+		data := map[string]interface{}{
+			"Error": "Invalid access key",
+		}
+		w.WriteHeader(http.StatusUnauthorized)
+		s.templates["login.html"].ExecuteTemplate(w, "base", data)
+		return
+	}
+
+	// Set session cookie
+	http.SetCookie(w, &http.Cookie{
+		Name:     sessionCookieName,
+		Value:    s.dashboardKey,
+		Path:     "/",
+		HttpOnly: true,
+		SameSite: http.SameSiteStrictMode,
+		MaxAge:   86400 * 30, // 30 days
+	})
+
+	http.Redirect(w, r, "/", http.StatusSeeOther)
+}
+
+func (s *Server) handleLogout(w http.ResponseWriter, r *http.Request) {
+	http.SetCookie(w, &http.Cookie{
+		Name:     sessionCookieName,
+		Value:    "",
+		Path:     "/",
+		HttpOnly: true,
+		MaxAge:   -1, // Delete cookie
+	})
+
+	http.Redirect(w, r, "/login", http.StatusSeeOther)
 }

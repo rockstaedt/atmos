@@ -14,6 +14,7 @@ import (
 )
 
 const testAPIKey = "test-api-key"
+const testDashboardKey = "test-dashboard-key"
 
 // Mock service
 type mockMeasurementService struct {
@@ -115,9 +116,10 @@ func TestHandlePostMeasurement(t *testing.T) {
 			}
 
 			server := &Server{
-				service: mockService,
-				mux:     http.NewServeMux(),
-				apiKey:  testAPIKey,
+				service:      mockService,
+				mux:          http.NewServeMux(),
+				apiKey:       testAPIKey,
+				dashboardKey: testDashboardKey,
 			}
 			server.routes("")
 
@@ -166,9 +168,10 @@ func TestHandleGetRooms(t *testing.T) {
 	}
 
 	server := &Server{
-		service: mockService,
-		mux:     http.NewServeMux(),
-		apiKey:  testAPIKey,
+		service:      mockService,
+		mux:          http.NewServeMux(),
+		apiKey:       testAPIKey,
+		dashboardKey: testDashboardKey,
 	}
 	server.routes("")
 
@@ -256,9 +259,10 @@ func TestHandleGetMeasurements(t *testing.T) {
 			}
 
 			server := &Server{
-				service: mockService,
-				mux:     http.NewServeMux(),
-				apiKey:  testAPIKey,
+				service:      mockService,
+				mux:          http.NewServeMux(),
+				apiKey:       testAPIKey,
+				dashboardKey: testDashboardKey,
 			}
 			server.routes("")
 
@@ -295,9 +299,10 @@ func TestHandleGetMeasurements(t *testing.T) {
 
 func TestAPIKeyAuthentication(t *testing.T) {
 	server := &Server{
-		service: &mockMeasurementService{},
-		mux:     http.NewServeMux(),
-		apiKey:  testAPIKey,
+		service:      &mockMeasurementService{},
+		mux:          http.NewServeMux(),
+		apiKey:       testAPIKey,
+		dashboardKey: testDashboardKey,
 	}
 	server.routes("")
 
@@ -347,7 +352,8 @@ func TestAPIKeyAuthentication(t *testing.T) {
 
 func TestHandleHealth(t *testing.T) {
 	server := &Server{
-		mux: http.NewServeMux(),
+		mux:          http.NewServeMux(),
+		dashboardKey: testDashboardKey,
 	}
 	server.routes("")
 
@@ -368,4 +374,65 @@ func TestHandleHealth(t *testing.T) {
 	if response["status"] != "ok" {
 		t.Errorf("Expected status 'ok', got %v", response["status"])
 	}
+}
+
+func TestDashboardAuthentication(t *testing.T) {
+	server := &Server{
+		service:      &mockMeasurementService{},
+		mux:          http.NewServeMux(),
+		apiKey:       testAPIKey,
+		dashboardKey: testDashboardKey,
+	}
+	server.routes("")
+
+	t.Run("dashboard without session redirects to login", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/", nil)
+		w := httptest.NewRecorder()
+
+		server.ServeHTTP(w, req)
+
+		if w.Code != http.StatusSeeOther {
+			t.Errorf("Expected status %d, got %d", http.StatusSeeOther, w.Code)
+		}
+		if location := w.Header().Get("Location"); location != "/login" {
+			t.Errorf("Expected redirect to /login, got %s", location)
+		}
+	})
+
+	t.Run("dashboard with invalid session redirects to login", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/", nil)
+		req.AddCookie(&http.Cookie{Name: sessionCookieName, Value: "wrong-key"})
+		w := httptest.NewRecorder()
+
+		server.ServeHTTP(w, req)
+
+		if w.Code != http.StatusSeeOther {
+			t.Errorf("Expected status %d, got %d", http.StatusSeeOther, w.Code)
+		}
+		if location := w.Header().Get("Location"); location != "/login" {
+			t.Errorf("Expected redirect to /login, got %s", location)
+		}
+	})
+
+	t.Run("dashboard with valid session passes auth", func(t *testing.T) {
+		// Test the middleware directly instead of full handler (which needs templates)
+		authPassed := false
+		testHandler := server.requireDashboardAuth(func(w http.ResponseWriter, r *http.Request) {
+			authPassed = true
+			w.WriteHeader(http.StatusOK)
+		})
+
+		req := httptest.NewRequest("GET", "/", nil)
+		req.AddCookie(&http.Cookie{Name: sessionCookieName, Value: testDashboardKey})
+		w := httptest.NewRecorder()
+
+		testHandler(w, req)
+
+		if !authPassed {
+			t.Error("Auth middleware should have passed with valid session")
+		}
+		if w.Code == http.StatusSeeOther {
+			t.Error("Should not redirect with valid session")
+		}
+	})
 }
