@@ -24,12 +24,14 @@ type Server struct {
 	service   MeasurementService
 	templates map[string]*template.Template
 	mux       *http.ServeMux
+	apiKey    string
 }
 
 type Config struct {
 	Port         int
 	TemplatesDir string
 	StaticDir    string
+	APIKey       string
 }
 
 func NewServer(cfg Config, service MeasurementService) (*Server, error) {
@@ -88,6 +90,7 @@ func NewServer(cfg Config, service MeasurementService) (*Server, error) {
 		service:   service,
 		templates: templates,
 		mux:       http.NewServeMux(),
+		apiKey:    cfg.APIKey,
 	}
 
 	s.routes(cfg.StaticDir)
@@ -96,10 +99,10 @@ func NewServer(cfg Config, service MeasurementService) (*Server, error) {
 }
 
 func (s *Server) routes(staticDir string) {
-	// API endpoints
-	s.mux.HandleFunc("POST /api/measurements", s.handlePostMeasurement)
-	s.mux.HandleFunc("GET /api/rooms", s.handleGetRooms)
-	s.mux.HandleFunc("GET /api/rooms/{roomID}/measurements", s.handleGetMeasurements)
+	// API endpoints (protected by API key)
+	s.mux.HandleFunc("POST /api/measurements", s.requireAPIKey(s.handlePostMeasurement))
+	s.mux.HandleFunc("GET /api/rooms", s.requireAPIKey(s.handleGetRooms))
+	s.mux.HandleFunc("GET /api/rooms/{roomID}/measurements", s.requireAPIKey(s.handleGetMeasurements))
 
 	// Web UI endpoints
 	s.mux.HandleFunc("GET /", s.handleDashboard)
@@ -139,4 +142,21 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(`{"status":"ok"}`))
+}
+
+// requireAPIKey wraps a handler with API key authentication
+func (s *Server) requireAPIKey(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		auth := r.Header.Get("Authorization")
+		expected := "Bearer " + s.apiKey
+
+		if auth != expected {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusUnauthorized)
+			w.Write([]byte(`{"error":"unauthorized"}`))
+			return
+		}
+
+		next(w, r)
+	}
 }

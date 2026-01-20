@@ -13,6 +13,8 @@ import (
 	"github.com/rockstaedt/atmos/internal/domain"
 )
 
+const testAPIKey = "test-api-key"
+
 // Mock service
 type mockMeasurementService struct {
 	recordMeasurementFn     func(ctx context.Context, m *domain.Measurement) error
@@ -115,6 +117,7 @@ func TestHandlePostMeasurement(t *testing.T) {
 			server := &Server{
 				service: mockService,
 				mux:     http.NewServeMux(),
+				apiKey:  testAPIKey,
 			}
 			server.routes("")
 
@@ -127,6 +130,7 @@ func TestHandlePostMeasurement(t *testing.T) {
 
 			req := httptest.NewRequest("POST", "/api/measurements", bytes.NewReader(body))
 			req.Header.Set("Content-Type", "application/json")
+			req.Header.Set("Authorization", "Bearer "+testAPIKey)
 
 			w := httptest.NewRecorder()
 			server.ServeHTTP(w, req)
@@ -164,10 +168,12 @@ func TestHandleGetRooms(t *testing.T) {
 	server := &Server{
 		service: mockService,
 		mux:     http.NewServeMux(),
+		apiKey:  testAPIKey,
 	}
 	server.routes("")
 
 	req := httptest.NewRequest("GET", "/api/rooms", nil)
+	req.Header.Set("Authorization", "Bearer "+testAPIKey)
 	w := httptest.NewRecorder()
 
 	server.ServeHTTP(w, req)
@@ -252,6 +258,7 @@ func TestHandleGetMeasurements(t *testing.T) {
 			server := &Server{
 				service: mockService,
 				mux:     http.NewServeMux(),
+				apiKey:  testAPIKey,
 			}
 			server.routes("")
 
@@ -261,6 +268,7 @@ func TestHandleGetMeasurements(t *testing.T) {
 			}
 
 			req := httptest.NewRequest("GET", url, nil)
+			req.Header.Set("Authorization", "Bearer "+testAPIKey)
 			w := httptest.NewRecorder()
 
 			server.ServeHTTP(w, req)
@@ -280,6 +288,58 @@ func TestHandleGetMeasurements(t *testing.T) {
 
 			if len(chartData.Temperature) != tt.expectedLength {
 				t.Errorf("Expected %d temperature points, got %d", tt.expectedLength, len(chartData.Temperature))
+			}
+		})
+	}
+}
+
+func TestAPIKeyAuthentication(t *testing.T) {
+	server := &Server{
+		service: &mockMeasurementService{},
+		mux:     http.NewServeMux(),
+		apiKey:  testAPIKey,
+	}
+	server.routes("")
+
+	tests := []struct {
+		name           string
+		authHeader     string
+		expectedStatus int
+	}{
+		{
+			name:           "missing authorization header",
+			authHeader:     "",
+			expectedStatus: http.StatusUnauthorized,
+		},
+		{
+			name:           "invalid API key",
+			authHeader:     "Bearer wrong-key",
+			expectedStatus: http.StatusUnauthorized,
+		},
+		{
+			name:           "missing Bearer prefix",
+			authHeader:     testAPIKey,
+			expectedStatus: http.StatusUnauthorized,
+		},
+		{
+			name:           "valid API key",
+			authHeader:     "Bearer " + testAPIKey,
+			expectedStatus: http.StatusOK,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := httptest.NewRequest("GET", "/api/rooms", nil)
+			if tt.authHeader != "" {
+				req.Header.Set("Authorization", tt.authHeader)
+			}
+			w := httptest.NewRecorder()
+
+			server.ServeHTTP(w, req)
+
+			if w.Code != tt.expectedStatus {
+				t.Errorf("Expected status %d, got %d", tt.expectedStatus, w.Code)
 			}
 		})
 	}

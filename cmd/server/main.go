@@ -42,11 +42,16 @@ func run() error {
 	port := getEnvInt("PORT", 8080)
 	templatesDir := getEnv("TEMPLATES_DIR", "./web/templates")
 	staticDir := getEnv("STATIC_DIR", "./web/static")
+	apiKey := os.Getenv("API_KEY")
+	if apiKey == "" {
+		return fmt.Errorf("API_KEY environment variable is required")
+	}
 
 	server, err := http.NewServer(http.Config{
 		Port:         port,
 		TemplatesDir: templatesDir,
 		StaticDir:    staticDir,
+		APIKey:       apiKey,
 	}, measurementService)
 	if err != nil {
 		return fmt.Errorf("failed to initialize server: %w", err)
