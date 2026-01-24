@@ -19,7 +19,7 @@ func setupTestDB(t *testing.T) *sql.DB {
 
 func TestMeasurementRepository_Save(t *testing.T) {
 	db := setupTestDB(t)
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	repo := NewMeasurementRepository(db)
 	ctx := context.Background()
@@ -58,7 +58,7 @@ func TestMeasurementRepository_Save(t *testing.T) {
 
 func TestMeasurementRepository_SaveWithCO2(t *testing.T) {
 	db := setupTestDB(t)
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	repo := NewMeasurementRepository(db)
 	ctx := context.Background()
@@ -93,7 +93,7 @@ func TestMeasurementRepository_SaveWithCO2(t *testing.T) {
 
 func TestMeasurementRepository_GetLatestByRoom(t *testing.T) {
 	db := setupTestDB(t)
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	repo := NewMeasurementRepository(db)
 	ctx := context.Background()
@@ -158,7 +158,7 @@ func TestMeasurementRepository_GetLatestByRoom(t *testing.T) {
 
 func TestMeasurementRepository_GetByRoomAndTimeRange(t *testing.T) {
 	db := setupTestDB(t)
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	repo := NewMeasurementRepository(db)
 	ctx := context.Background()
@@ -229,7 +229,7 @@ func TestMeasurementRepository_GetByRoomAndTimeRange(t *testing.T) {
 
 func TestMeasurementRepository_GetAllRooms(t *testing.T) {
 	db := setupTestDB(t)
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	repo := NewMeasurementRepository(db)
 	ctx := context.Background()
@@ -280,7 +280,7 @@ func TestMeasurementRepository_GetAllRooms(t *testing.T) {
 
 func TestMeasurementRepository_AutoRegistration(t *testing.T) {
 	db := setupTestDB(t)
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	repo := NewMeasurementRepository(db)
 	ctx := context.Background()

@@ -164,7 +164,7 @@ func (s *Server) Start(ctx context.Context) error {
 func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(`{"status":"ok"}`))
+	_, _ = w.Write([]byte(`{"status":"ok"}`))
 }
 
 // requireAPIKey wraps a handler with API key authentication
@@ -176,7 +176,7 @@ func (s *Server) requireAPIKey(next http.HandlerFunc) http.HandlerFunc {
 		if auth != expected {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusUnauthorized)
-			w.Write([]byte(`{"error":"unauthorized"}`))
+			_, _ = w.Write([]byte(`{"error":"unauthorized"}`))
 			return
 		}
 
@@ -211,7 +211,7 @@ func (s *Server) handleLoginPage(w http.ResponseWriter, r *http.Request) {
 	data := map[string]interface{}{
 		"Error": nil,
 	}
-	s.templates["login.html"].ExecuteTemplate(w, "base", data)
+	_ = s.templates["login.html"].ExecuteTemplate(w, "base", data)
 }
 
 func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
@@ -226,7 +226,7 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 			"Error": "Invalid access key",
 		}
 		w.WriteHeader(http.StatusUnauthorized)
-		s.templates["login.html"].ExecuteTemplate(w, "base", data)
+		_ = s.templates["login.html"].ExecuteTemplate(w, "base", data)
 		return
 	}
 

@@ -23,7 +23,7 @@ func (r *MeasurementRepository) Save(ctx context.Context, m *domain.Measurement)
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
-	defer tx.Rollback()
+	defer func() { _ = tx.Rollback() }()
 
 	// Auto-register room if it doesn't exist
 	_, err = tx.ExecContext(ctx, `
@@ -94,7 +94,7 @@ func (r *MeasurementRepository) GetByRoomAndTimeRange(ctx context.Context, roomI
 	if err != nil {
 		return nil, fmt.Errorf("failed to query measurements: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var measurements []*domain.Measurement
 	for rows.Next() {
@@ -129,7 +129,7 @@ func (r *MeasurementRepository) GetAllRooms(ctx context.Context) ([]*domain.Room
 	if err != nil {
 		return nil, fmt.Errorf("failed to query rooms: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var rooms []*domain.Room
 	for rows.Next() {

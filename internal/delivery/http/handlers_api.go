@@ -47,7 +47,7 @@ func (s *Server) handlePostMeasurement(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
 		"id":      measurement.ID,
 		"room_id": measurement.RoomID,
 		"status":  "created",
@@ -62,7 +62,7 @@ func (s *Server) handleGetRooms(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(rooms)
+	_ = json.NewEncoder(w).Encode(rooms)
 }
 
 func (s *Server) handleGetMeasurements(w http.ResponseWriter, r *http.Request) {
@@ -115,5 +115,5 @@ func (s *Server) handleGetMeasurements(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(chartData)
+	_ = json.NewEncoder(w).Encode(chartData)
 }
