@@ -29,6 +29,7 @@ type Server struct {
 	mux          *http.ServeMux
 	apiKey       string
 	dashboardKey string
+	version      string
 }
 
 type Config struct {
@@ -37,6 +38,7 @@ type Config struct {
 	StaticDir    string
 	APIKey       string
 	DashboardKey string
+	Version      string
 }
 
 func NewServer(cfg Config, service MeasurementService) (*Server, error) {
@@ -106,6 +108,7 @@ func NewServer(cfg Config, service MeasurementService) (*Server, error) {
 		mux:          http.NewServeMux(),
 		apiKey:       cfg.APIKey,
 		dashboardKey: cfg.DashboardKey,
+		version:      cfg.Version,
 	}
 
 	s.routes(cfg.StaticDir)

@@ -10,6 +10,12 @@ import (
 	"github.com/rockstaedt/atmos/internal/domain"
 )
 
+// pageData wraps any view data with common page fields
+type pageData struct {
+	Data    interface{}
+	Version string
+}
+
 type roomDetailView struct {
 	RoomID      string
 	RoomName    string
@@ -76,7 +82,7 @@ func (s *Server) handleDashboard(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	tmpl := s.templates["dashboard.html"]
-	if err := tmpl.ExecuteTemplate(w, "base", data); err != nil {
+	if err := tmpl.ExecuteTemplate(w, "base", pageData{Data: data, Version: s.version}); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
@@ -110,7 +116,7 @@ func (s *Server) handleRoomDetail(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	tmpl := s.templates["room-detail.html"]
-	if err := tmpl.ExecuteTemplate(w, "base", data); err != nil {
+	if err := tmpl.ExecuteTemplate(w, "base", pageData{Data: data, Version: s.version}); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }

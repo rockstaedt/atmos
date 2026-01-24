@@ -12,6 +12,9 @@ import (
 	"github.com/rockstaedt/atmos/internal/infrastructure/sqlite"
 )
 
+// version is set via ldflags at build time
+var version = "dev"
+
 func main() {
 	if err := run(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
@@ -57,6 +60,7 @@ func run() error {
 		StaticDir:    staticDir,
 		APIKey:       apiKey,
 		DashboardKey: dashboardKey,
+		Version:      version,
 	}, measurementService)
 	if err != nil {
 		return fmt.Errorf("failed to initialize server: %w", err)

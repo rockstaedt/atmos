@@ -1,4 +1,4 @@
-{{define "title"}}{{.RoomName}} - Atmos Climate Monitor{{end}}
+{{define "title"}}{{.Data.RoomName}} - Atmos Climate Monitor{{end}}
 
 {{define "head"}}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
@@ -6,7 +6,7 @@
 
 {{define "content"}}
 <main class="page">
-    {{template "room-detail-fragment" .}}
+    {{template "room-detail-fragment" .Data}}
 
     <section class="fade-in" style="margin-bottom:20px; display:flex; gap:12px; flex-wrap:wrap;">
         <button onclick="loadChart('24h')" id="btn-24h" class="button">Last 24 hours</button>
@@ -28,8 +28,7 @@
 {{end}}
 
 {{define "footer"}}
-<span class="meta">Room</span>
-<span class="meta">{{.RoomID}}</span>
+<span class="meta">{{.Version}}</span>
 {{end}}
 
 {{define "scripts"}}
@@ -44,7 +43,7 @@ async function loadChart(range) {
     document.getElementById('btn-' + range).classList.remove('ghost');
 
     try {
-        const response = await fetch('/api/rooms/{{.RoomID}}/measurements?range=' + range);
+        const response = await fetch('/api/rooms/{{.Data.RoomID}}/measurements?range=' + range);
         const data = await response.json();
 
         if (!data.labels || data.labels.length === 0) {
