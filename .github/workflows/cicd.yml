@@ -90,6 +90,7 @@ jobs:
           tag_name: ${{ needs.preparation.outputs.version }}
           name: ${{ needs.preparation.outputs.version }}
           generate_release_notes: true
+          token: ${{ secrets.MY_TOKEN }}
 
   deploy:
     name: Deploy
