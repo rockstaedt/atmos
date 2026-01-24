@@ -9,6 +9,7 @@ on:
       - '**.go'
       - 'go.mod'
   pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
