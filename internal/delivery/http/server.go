@@ -3,8 +3,10 @@ package http
 import (
 	"context"
 	"crypto/subtle"
+	"embed"
 	"fmt"
 	"html/template"
+	"io/fs"
 	"log"
 	"net/http"
 	"time"
@@ -34,15 +36,14 @@ type Server struct {
 
 type Config struct {
 	Port         int
-	TemplatesDir string
-	StaticDir    string
+	Assets       embed.FS
 	APIKey       string
 	DashboardKey string
 	Version      string
 }
 
 func NewServer(cfg Config, service MeasurementService) (*Server, error) {
-	// Load templates individually to avoid conflicts
+	// Load templates from embedded filesystem
 	templates := make(map[string]*template.Template)
 	funcMap := template.FuncMap{
 		"derefFloat": func(v *float64) float64 {
@@ -53,53 +54,61 @@ func NewServer(cfg Config, service MeasurementService) (*Server, error) {
 		},
 	}
 
-	basePath := fmt.Sprintf("%s/base.html", cfg.TemplatesDir)
-	dashboardFragmentPath := fmt.Sprintf("%s/partials/dashboard-fragment.html", cfg.TemplatesDir)
-	roomDetailFragmentPath := fmt.Sprintf("%s/partials/room-detail-fragment.html", cfg.TemplatesDir)
-	dashboardTmpl, err := template.New("base.html").Funcs(funcMap).ParseFiles(
-		basePath,
-		fmt.Sprintf("%s/dashboard.html", cfg.TemplatesDir),
-		dashboardFragmentPath,
+	// Helper to parse templates from embed.FS
+	parseTemplates := func(name string, files ...string) (*template.Template, error) {
+		return template.New(name).Funcs(funcMap).ParseFS(cfg.Assets, files...)
+	}
+
+	dashboardTmpl, err := parseTemplates("base.html",
+		"templates/base.html",
+		"templates/dashboard.html",
+		"templates/partials/dashboard-fragment.html",
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load dashboard template: %w", err)
 	}
 	templates["dashboard.html"] = dashboardTmpl
 
-	roomDetailTmpl, err := template.New("base.html").Funcs(funcMap).ParseFiles(
-		basePath,
-		fmt.Sprintf("%s/room-detail.html", cfg.TemplatesDir),
-		roomDetailFragmentPath,
+	roomDetailTmpl, err := parseTemplates("base.html",
+		"templates/base.html",
+		"templates/room-detail.html",
+		"templates/partials/room-detail-fragment.html",
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load room-detail template: %w", err)
 	}
 	templates["room-detail.html"] = roomDetailTmpl
 
-	dashboardFragmentTmpl, err := template.New("dashboard-fragment.html").Funcs(funcMap).ParseFiles(
-		dashboardFragmentPath,
+	dashboardFragmentTmpl, err := parseTemplates("dashboard-fragment.html",
+		"templates/partials/dashboard-fragment.html",
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load dashboard fragment template: %w", err)
 	}
 	templates["dashboard-fragment.html"] = dashboardFragmentTmpl
 
-	roomDetailFragmentTmpl, err := template.New("room-detail-fragment.html").Funcs(funcMap).ParseFiles(
-		roomDetailFragmentPath,
+	roomDetailFragmentTmpl, err := parseTemplates("room-detail-fragment.html",
+		"templates/partials/room-detail-fragment.html",
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load room detail fragment template: %w", err)
 	}
 	templates["room-detail-fragment.html"] = roomDetailFragmentTmpl
 
-	loginTmpl, err := template.New("base.html").Funcs(funcMap).ParseFiles(
-		basePath,
-		fmt.Sprintf("%s/login.html", cfg.TemplatesDir),
+	loginTmpl, err := parseTemplates("base.html",
+		"templates/base.html",
+		"templates/login.html",
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load login template: %w", err)
 	}
 	templates["login.html"] = loginTmpl
+
+	// Create sub-filesystem for static files
+	staticFS, err := fs.Sub(cfg.Assets, "static")
+	if err != nil {
+		return nil, fmt.Errorf("failed to create static filesystem: %w", err)
+	}
 
 	s := &Server{
 		addr:         fmt.Sprintf(":%d", cfg.Port),
@@ -111,12 +120,12 @@ func NewServer(cfg Config, service MeasurementService) (*Server, error) {
 		version:      cfg.Version,
 	}
 
-	s.routes(cfg.StaticDir)
+	s.routes(staticFS)
 
 	return s, nil
 }
 
-func (s *Server) routes(staticDir string) {
+func (s *Server) routes(staticFS fs.FS) {
 	// API endpoints (protected by API key)
 	s.mux.HandleFunc("POST /api/measurements", s.requireAPIKey(s.handlePostMeasurement))
 	s.mux.HandleFunc("GET /api/rooms", s.requireAPIKey(s.handleGetRooms))
@@ -133,9 +142,8 @@ func (s *Server) routes(staticDir string) {
 	s.mux.HandleFunc("GET /partials/dashboard", s.requireDashboardAuth(s.handleDashboardFragment))
 	s.mux.HandleFunc("GET /partials/rooms/{roomID}", s.requireDashboardAuth(s.handleRoomDetailFragment))
 
-	// Static files
-	fs := http.FileServer(http.Dir(staticDir))
-	s.mux.Handle("GET /static/", http.StripPrefix("/static/", fs))
+	// Static files (embedded)
+	s.mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.FS(staticFS))))
 
 	// Health check
 	s.mux.HandleFunc("GET /health", s.handleHealth)

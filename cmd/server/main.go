@@ -10,6 +10,7 @@ import (
 	"github.com/rockstaedt/atmos/internal/application"
 	"github.com/rockstaedt/atmos/internal/delivery/http"
 	"github.com/rockstaedt/atmos/internal/infrastructure/sqlite"
+	"github.com/rockstaedt/atmos/web"
 )
 
 // version is set via ldflags at build time
@@ -43,8 +44,6 @@ func run() error {
 
 	// Initialize HTTP server
 	port := getEnvInt("PORT", 8080)
-	templatesDir := getEnv("TEMPLATES_DIR", "./web/templates")
-	staticDir := getEnv("STATIC_DIR", "./web/static")
 	apiKey := os.Getenv("API_KEY")
 	if apiKey == "" {
 		return fmt.Errorf("API_KEY environment variable is required")
@@ -56,8 +55,7 @@ func run() error {
 
 	server, err := http.NewServer(http.Config{
 		Port:         port,
-		TemplatesDir: templatesDir,
-		StaticDir:    staticDir,
+		Assets:       web.Files,
 		APIKey:       apiKey,
 		DashboardKey: dashboardKey,
 		Version:      version,

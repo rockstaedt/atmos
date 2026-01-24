@@ -4,7 +4,7 @@
 build:
 	@echo "Building atmos..."
 	@mkdir -p bin
-	@CGO_ENABLED=1 go build -o bin/atmos ./cmd/server
+	@CGO_ENABLED=0 go build -o bin/atmos ./cmd/server
 	@echo "Build complete: bin/atmos"
 
 # Run tests with coverage

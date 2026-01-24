@@ -7,11 +7,15 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"testing/fstest"
 	"time"
 
 	"github.com/rockstaedt/atmos/internal/application"
 	"github.com/rockstaedt/atmos/internal/domain"
 )
+
+// emptyFS is an empty filesystem for tests
+var emptyFS = fstest.MapFS{}
 
 const testAPIKey = "test-api-key"
 const testDashboardKey = "test-dashboard-key"
@@ -121,7 +125,7 @@ func TestHandlePostMeasurement(t *testing.T) {
 				apiKey:       testAPIKey,
 				dashboardKey: testDashboardKey,
 			}
-			server.routes("")
+			server.routes(emptyFS)
 
 			var body []byte
 			if str, ok := tt.payload.(string); ok {
@@ -173,7 +177,7 @@ func TestHandleGetRooms(t *testing.T) {
 		apiKey:       testAPIKey,
 		dashboardKey: testDashboardKey,
 	}
-	server.routes("")
+	server.routes(emptyFS)
 
 	req := httptest.NewRequest("GET", "/api/rooms", nil)
 	req.Header.Set("Authorization", "Bearer "+testAPIKey)
@@ -264,7 +268,7 @@ func TestHandleGetMeasurements(t *testing.T) {
 				apiKey:       testAPIKey,
 				dashboardKey: testDashboardKey,
 			}
-			server.routes("")
+			server.routes(emptyFS)
 
 			url := "/api/rooms/" + tt.roomID + "/measurements"
 			if tt.rangeParam != "" {
@@ -304,7 +308,7 @@ func TestAPIKeyAuthentication(t *testing.T) {
 		apiKey:       testAPIKey,
 		dashboardKey: testDashboardKey,
 	}
-	server.routes("")
+	server.routes(emptyFS)
 
 	tests := []struct {
 		name           string
@@ -355,7 +359,7 @@ func TestHandleHealth(t *testing.T) {
 		mux:          http.NewServeMux(),
 		dashboardKey: testDashboardKey,
 	}
-	server.routes("")
+	server.routes(emptyFS)
 
 	req := httptest.NewRequest("GET", "/health", nil)
 	w := httptest.NewRecorder()
@@ -383,7 +387,7 @@ func TestDashboardAuthentication(t *testing.T) {
 		apiKey:       testAPIKey,
 		dashboardKey: testDashboardKey,
 	}
-	server.routes("")
+	server.routes(emptyFS)
 
 	t.Run("dashboard without session redirects to login", func(t *testing.T) {
 		req := httptest.NewRequest("GET", "/", nil)
