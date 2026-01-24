@@ -14,10 +14,13 @@ test:
 	@go tool cover -html=coverage.out -o coverage.html
 	@echo "Coverage report: coverage.html"
 
-# Run locally
+# Run locally (set API_KEY and DASHBOARD_KEY env vars or override defaults)
+API_KEY ?= dev-api-key
+DASHBOARD_KEY ?= dev-dashboard-key
+
 run:
 	@echo "Starting atmos server..."
-	@DB_PATH=./atmos.db PORT=8080 go run ./cmd/server
+	@DB_PATH=./atmos.db PORT=8080 API_KEY=$(API_KEY) DASHBOARD_KEY=$(DASHBOARD_KEY) go run ./cmd/server
 
 # Build Docker image
 docker-build:
@@ -56,3 +59,9 @@ help:
 	@echo "  docker-stop  - Stop Docker container"
 	@echo "  clean        - Clean build artifacts"
 	@echo "  help         - Show this help message"
+	@echo ""
+	@echo "Environment variables for 'run':"
+	@echo "  API_KEY       - API key for sensor authentication (default: dev-api-key)"
+	@echo "  DASHBOARD_KEY - Key for dashboard access (default: dev-dashboard-key)"
+	@echo ""
+	@echo "Example: make run API_KEY=my-secret DASHBOARD_KEY=my-dashboard-key"
