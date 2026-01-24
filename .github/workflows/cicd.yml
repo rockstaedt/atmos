@@ -84,7 +84,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: softprops/action-gh-release@v1
+      - uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ needs.preparation.outputs.version }}
           name: ${{ needs.preparation.outputs.version }}
