@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 
-	_ "github.com/mattn/go-sqlite3"
+	_ "modernc.org/sqlite"
 )
 
 type Config struct {
@@ -14,9 +14,9 @@ type Config struct {
 // NewConnection creates a SQLite connection with optimal settings for time-series data
 func NewConnection(cfg Config) (*sql.DB, error) {
 	// Connection string with pragmas for optimal performance
-	dsn := fmt.Sprintf("file:%s?_journal_mode=WAL&_busy_timeout=5000&_synchronous=NORMAL&_cache_size=-64000&_foreign_keys=ON", cfg.Path)
+	dsn := fmt.Sprintf("file:%s?_pragma=journal_mode%%3DWAL&_pragma=busy_timeout%%3D5000&_pragma=synchronous%%3DNORMAL&_pragma=cache_size%%3D-64000&_pragma=foreign_keys%%3DON", cfg.Path)
 
-	db, err := sql.Open("sqlite3", dsn)
+	db, err := sql.Open("sqlite", dsn)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database: %w", err)
 	}

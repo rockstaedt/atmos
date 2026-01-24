@@ -109,7 +109,7 @@ jobs:
         with:
           fallback: 0.0.1
       - name: Build binary
-        run: GOOS=linux GOARCH=amd64 CGO_ENABLED=1 go build -ldflags='-s -X main.version=${{ steps.previous_tag.outputs.tag }}' -o=./atmos ./cmd/server
+        run: GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -ldflags='-s -X main.version=${{ steps.previous_tag.outputs.tag }}' -o=./atmos ./cmd/server
       - name: Copy binary to server
         uses: appleboy/scp-action@v0.1.4
         with:
