@@ -1,0 +1,136 @@
+name: CICD
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'cmd/**'
+      - 'ui/**'
+      - '**.go'
+      - 'go.mod'
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: WillAbides/setup-go-faster@v1.8.0
+        with:
+          go-version: "1.25.x"
+      - name: Run tests
+        run: go test ./... -coverprofile=coverage.txt
+      - name: Run static analysis
+        run: go vet ./...
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+          cache: false
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v9
+        with:
+          version: v2.6
+
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: WillAbides/setup-go-faster@v1.8.0
+        with:
+          go-version: "1.25.x"
+      - run: go build ./...
+
+  integration-test:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: WillAbides/setup-go-faster@v1.8.0
+        with:
+          go-version: "1.25.x"
+      - name: Run integration tests
+        run: go test ./... -tags=integration -v
+
+  preparation:
+    name: Versioning
+    runs-on: ubuntu-latest
+    needs: [ test, build, lint, integration-test ]
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Get previous tag
+        id: previous_tag
+        uses: "WyriHaximus/github-action-get-previous-tag@v1"
+        with:
+          fallback: 0.0.1
+      - name: Get next version
+        id: semver
+        uses: "WyriHaximus/github-action-next-semvers@v1"
+        with:
+          version: ${{ steps.previous_tag.outputs.tag }}
+    outputs:
+      version: ${{ steps.semver.outputs.v_patch }}
+
+  release:
+    name: Release
+    needs: preparation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ needs.preparation.outputs.version }}
+          name: ${{ needs.preparation.outputs.version }}
+          generate_release_notes: true
+          token: ${{ secrets.MY_TOKEN }}
+
+  deploy:
+    name: Deploy
+    needs: [ preparation, release ]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v4
+        with:
+          go-version: '1.25'
+      - name: Get previous tag
+        id: previous_tag
+        uses: "WyriHaximus/github-action-get-previous-tag@v1"
+        with:
+          fallback: 0.0.1
+      - name: Build binary
+        run: GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -ldflags='-s -X main.version=${{ steps.previous_tag.outputs.tag }}' -o=./atmos ./cmd/server
+      - name: Copy binary to server
+        uses: appleboy/scp-action@v0.1.4
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          source: "./atmos"
+          target: "/home/rocky/atmos"
+      - uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script: sudo -n systemctl restart atmos
