@@ -43,7 +43,7 @@ async function loadChart(range) {
     document.getElementById('btn-' + range).classList.remove('ghost');
 
     try {
-        const response = await fetch('/api/rooms/{{.Data.RoomID}}/measurements?range=' + range);
+        const response = await fetch('/dashboard/api/rooms/{{.Data.RoomID}}/measurements?range=' + range);
         const data = await response.json();
 
         if (!data.labels || data.labels.length === 0) {

@@ -141,6 +141,7 @@ func (s *Server) routes(staticFS fs.FS) {
 	s.mux.HandleFunc("GET /rooms/{roomID}", s.requireDashboardAuth(s.handleRoomDetail))
 	s.mux.HandleFunc("GET /partials/dashboard", s.requireDashboardAuth(s.handleDashboardFragment))
 	s.mux.HandleFunc("GET /partials/rooms/{roomID}", s.requireDashboardAuth(s.handleRoomDetailFragment))
+	s.mux.HandleFunc("GET /dashboard/api/rooms/{roomID}/measurements", s.requireDashboardAuth(s.handleGetMeasurements))
 
 	// Static files (embedded)
 	s.mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.FS(staticFS))))
