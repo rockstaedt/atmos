@@ -18,21 +18,10 @@ func (s *Server) handlePostMeasurement(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Use provided timestamp or server time
-	timestamp := time.Now().UTC()
-	if dto.Timestamp != nil {
-		parsed, err := time.Parse(time.RFC3339, *dto.Timestamp)
-		if err != nil {
-			http.Error(w, fmt.Sprintf("Invalid timestamp format: %v", err), http.StatusBadRequest)
-			return
-		}
-		timestamp = parsed.UTC()
-	}
-
 	// Convert DTO to domain entity
 	measurement := &domain.Measurement{
 		RoomID:      dto.RoomID,
-		Timestamp:   timestamp,
+		Timestamp:   time.Now().UTC(),
 		Temperature: dto.Temperature,
 		Humidity:    dto.Humidity,
 		Pressure:    dto.Pressure,

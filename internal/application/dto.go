@@ -11,7 +11,6 @@ type MeasurementDTO struct {
 	Humidity    float64  `json:"humidity"`
 	Pressure    float64  `json:"pressure"`
 	CO2         *float64 `json:"co2,omitempty"`
-	Timestamp   *string  `json:"timestamp,omitempty"` // Optional, use server time if missing
 }
 
 // ChartDataDTO represents data for Chart.js
