@@ -141,7 +141,6 @@ func (s *Server) routes(staticFS fs.FS) {
 	s.mux.HandleFunc("GET /rooms/{roomID}", s.requireDashboardAuth(s.handleRoomDetail))
 	s.mux.HandleFunc("GET /partials/dashboard", s.requireDashboardAuth(s.handleDashboardFragment))
 	s.mux.HandleFunc("GET /partials/rooms/{roomID}", s.requireDashboardAuth(s.handleRoomDetailFragment))
-	s.mux.HandleFunc("GET /dashboard/api/rooms/{roomID}/measurements", s.requireDashboardAuth(s.handleGetMeasurements))
 
 	// Static files (embedded)
 	s.mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.FS(staticFS))))
@@ -177,19 +176,26 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 }
 
 // requireAPIKey wraps a handler with API key authentication
+// Also accepts valid dashboard session cookies for browser-based access
 func (s *Server) requireAPIKey(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		// Check API key first
 		auth := r.Header.Get("Authorization")
 		expected := "Bearer " + s.apiKey
-
-		if auth != expected {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusUnauthorized)
-			_, _ = w.Write([]byte(`{"error":"unauthorized"}`))
+		if auth == expected {
+			next(w, r)
 			return
 		}
 
-		next(w, r)
+		// Fall back to dashboard session cookie
+		if cookie, err := r.Cookie(sessionCookieName); err == nil && s.isValidSession(cookie.Value) {
+			next(w, r)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusUnauthorized)
+		_, _ = w.Write([]byte(`{"error":"unauthorized"}`))
 	}
 }
 
