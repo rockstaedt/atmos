@@ -5,7 +5,7 @@
             <a href="/" class="button ghost">← Back to Dashboard</a>
             <p class="eyebrow" style="margin-top:12px;">Room detail</p>
             <h2 class="headline">{{.RoomName}}</h2>
-            <p class="subhead">Latest measurement captured at <span class="meta">{{.Measurement.Timestamp.Format "2006-01-02 15:04:05 UTC"}}</span>.</p>
+            <p class="subhead">Latest measurement captured at <span class="meta">{{formatTime .Measurement.Timestamp "2006-01-02 15:04"}}</span>.</p>
         </div>
         <div class="pill">
             Room ID <span class="meta">{{.RoomID}}</span>

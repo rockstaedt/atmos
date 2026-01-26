@@ -43,6 +43,12 @@ type Config struct {
 }
 
 func NewServer(cfg Config, service MeasurementService) (*Server, error) {
+	// Load timezone for display
+	berlinTZ, err := time.LoadLocation("Europe/Berlin")
+	if err != nil {
+		return nil, fmt.Errorf("failed to load timezone: %w", err)
+	}
+
 	// Load templates from embedded filesystem
 	templates := make(map[string]*template.Template)
 	funcMap := template.FuncMap{
@@ -51,6 +57,9 @@ func NewServer(cfg Config, service MeasurementService) (*Server, error) {
 				return 0
 			}
 			return *v
+		},
+		"formatTime": func(t time.Time, layout string) string {
+			return t.In(berlinTZ).Format(layout)
 		},
 	}
 

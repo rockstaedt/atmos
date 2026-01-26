@@ -10,7 +10,7 @@
             <img src="/static/logo.svg" alt="Atmos logo">
             <div>
                 <div class="eyebrow" style="margin-bottom:4px;">Atmos</div>
-                <span>Updated <span class="meta">{{.LastUpdated.Format "2006-01-02 15:04:05 UTC"}}</span></span>
+                <span>Updated <span class="meta">{{formatTime .LastUpdated "2006-01-02 15:04"}}</span></span>
             </div>
         </div>
     </div>
@@ -21,7 +21,7 @@
             <div class="card-header">
                 <div>
                     <h3 class="card-title">{{.Name}}</h3>
-                    <div class="meta">Updated {{.LastMeasurement.Format "15:04:05 UTC"}}</div>
+                    <div class="meta">Updated {{formatTime .LastMeasurement "15:04"}}</div>
                 </div>
                 <div class="pill">Room</div>
             </div>
