@@ -10,8 +10,8 @@
     {{template "room-detail-fragment" .Data}}
 
     <section class="fade-in" style="margin-bottom:20px; display:flex; gap:12px; flex-wrap:wrap;">
-        <button onclick="loadChart('12h')" id="btn-12h" class="button ghost">Last 12 hours</button>
-        <button onclick="loadChart('24h')" id="btn-24h" class="button">Last 24 hours</button>
+        <button onclick="loadChart('12h')" id="btn-12h" class="button">Last 12 hours</button>
+        <button onclick="loadChart('24h')" id="btn-24h" class="button ghost">Last 24 hours</button>
         <button onclick="loadChart('7d')" id="btn-7d" class="button ghost">Last 7 days</button>
     </section>
 
@@ -169,7 +169,7 @@ async function loadChart(range) {
     }
 }
 
-// Load 24h data by default
-loadChart('24h');
+// Load 12h data by default
+loadChart('12h');
 </script>
 {{end}}
