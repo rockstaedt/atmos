@@ -2,6 +2,7 @@
 
 {{define "head"}}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
 {{end}}
 
 {{define "content"}}
@@ -52,15 +53,18 @@ async function loadChart(range) {
             return;
         }
 
-        // Convert UTC timestamps to Europe/Berlin
-        const labels = data.labels.map(ts => {
-            const date = new Date(ts);
-            if (range === '12h' || range === '24h') {
-                return date.toLocaleTimeString('de-DE', { timeZone: 'Europe/Berlin', hour: '2-digit', minute: '2-digit' });
-            } else {
-                return date.toLocaleString('de-DE', { timeZone: 'Europe/Berlin', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
-            }
-        });
+        // Convert to {x: timestamp, y: value} format for time scale
+        const timestamps = data.labels.map(ts => new Date(ts));
+        const tempData = timestamps.map((t, i) => ({x: t, y: data.temperature[i]}));
+        const humidityData = timestamps.map((t, i) => ({x: t, y: data.humidity[i]}));
+        const pressureData = timestamps.map((t, i) => ({x: t, y: data.pressure[i]}));
+
+        // Time display format based on range
+        const timeUnit = (range === '12h' || range === '24h') ? 'hour' : 'day';
+        const displayFormats = {
+            hour: 'HH:mm',
+            day: 'dd.MM HH:mm'
+        };
 
         // Temperature & Humidity Chart
         if (tempHumidityChart) tempHumidityChart.destroy();
@@ -68,23 +72,24 @@ async function loadChart(range) {
         tempHumidityChart = new Chart(ctx1, {
             type: 'line',
             data: {
-                labels: labels,
                 datasets: [
                     {
                         label: 'Temperature (°C)',
-                        data: data.temperature,
+                        data: tempData,
                         borderColor: '#1d4ed8',
                         backgroundColor: 'rgba(29, 78, 216, 0.12)',
                         tension: 0.4,
-                        fill: true
+                        fill: true,
+                        spanGaps: 300000 // Only connect points if gap < 5 minutes
                     },
                     {
                         label: 'Humidity (%)',
-                        data: data.humidity,
+                        data: humidityData,
                         borderColor: '#0f766e',
                         backgroundColor: 'rgba(15, 118, 110, 0.12)',
                         tension: 0.4,
-                        fill: true
+                        fill: true,
+                        spanGaps: 300000
                     }
                 ]
             },
@@ -102,6 +107,12 @@ async function loadChart(range) {
                         }
                     },
                     x: {
+                        type: 'time',
+                        time: {
+                            unit: timeUnit,
+                            displayFormats: displayFormats,
+                            tooltipFormat: 'dd.MM.yyyy HH:mm'
+                        },
                         grid: {
                             display: false
                         }
@@ -116,14 +127,14 @@ async function loadChart(range) {
         pressureChart = new Chart(ctx2, {
             type: 'line',
             data: {
-                labels: labels,
                 datasets: [{
                     label: 'Pressure (hPa)',
-                    data: data.pressure,
+                    data: pressureData,
                     borderColor: '#e07a2f',
                     backgroundColor: 'rgba(224, 122, 47, 0.15)',
                     tension: 0.4,
-                    fill: true
+                    fill: true,
+                    spanGaps: 300000
                 }]
             },
             options: {
@@ -140,6 +151,12 @@ async function loadChart(range) {
                         }
                     },
                     x: {
+                        type: 'time',
+                        time: {
+                            unit: timeUnit,
+                            displayFormats: displayFormats,
+                            tooltipFormat: 'dd.MM.yyyy HH:mm'
+                        },
                         grid: {
                             display: false
                         }
