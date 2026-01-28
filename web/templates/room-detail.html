@@ -9,6 +9,7 @@
     {{template "room-detail-fragment" .Data}}
 
     <section class="fade-in" style="margin-bottom:20px; display:flex; gap:12px; flex-wrap:wrap;">
+        <button onclick="loadChart('12h')" id="btn-12h" class="button ghost">Last 12 hours</button>
         <button onclick="loadChart('24h')" id="btn-24h" class="button">Last 24 hours</button>
         <button onclick="loadChart('7d')" id="btn-7d" class="button ghost">Last 7 days</button>
     </section>
@@ -54,7 +55,7 @@ async function loadChart(range) {
         // Convert UTC timestamps to Europe/Berlin
         const labels = data.labels.map(ts => {
             const date = new Date(ts);
-            if (range === '24h') {
+            if (range === '12h' || range === '24h') {
                 return date.toLocaleTimeString('de-DE', { timeZone: 'Europe/Berlin', hour: '2-digit', minute: '2-digit' });
             } else {
                 return date.toLocaleString('de-DE', { timeZone: 'Europe/Berlin', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });

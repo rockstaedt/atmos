@@ -62,6 +62,8 @@ func (s *Server) handleGetMeasurements(w http.ResponseWriter, r *http.Request) {
 	duration := 24 * time.Hour
 
 	switch rangeParam {
+	case "12h":
+		duration = 12 * time.Hour
 	case "7d":
 		duration = 7 * 24 * time.Hour
 	case "30d":
