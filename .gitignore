@@ -27,3 +27,4 @@ coverage.html
 .env
 /.claude/
 /remote/
+/server
