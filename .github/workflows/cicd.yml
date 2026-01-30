@@ -5,7 +5,8 @@ on:
       - main
     paths:
       - 'cmd/**'
-      - 'ui/**'
+      - 'web/**'
+      - 'internal/**'
       - '**.go'
       - 'go.mod'
   pull_request:
