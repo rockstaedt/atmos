@@ -1,8 +1,11 @@
 module github.com/rockstaedt/atmos
 
-go 1.25.4
+go 1.24.7
 
-require modernc.org/sqlite v1.44.3
+require (
+	github.com/golang-migrate/migrate/v4 v4.18.2
+	modernc.org/sqlite v1.44.3
+)
 
 require (
 	github.com/dustin/go-humanize v1.0.1 // indirect
