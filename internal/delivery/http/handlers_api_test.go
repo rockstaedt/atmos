@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"testing/fstest"
 	"time"
@@ -439,4 +440,49 @@ func TestDashboardAuthentication(t *testing.T) {
 			t.Error("Should not redirect with valid session")
 		}
 	})
+}
+
+func TestSecurityHeaders(t *testing.T) {
+	server := &Server{
+		service:      &mockMeasurementService{},
+		mux:          http.NewServeMux(),
+		apiKey:       testAPIKey,
+		dashboardKey: testDashboardKey,
+	}
+	server.routes(emptyFS)
+
+	req := httptest.NewRequest("GET", "/health", nil)
+	w := httptest.NewRecorder()
+
+	server.ServeHTTP(w, req)
+
+	expectedHeaders := map[string]string{
+		"X-Content-Type-Options": "nosniff",
+		"X-Frame-Options":        "DENY",
+		"Referrer-Policy":        "strict-origin-when-cross-origin",
+		"X-XSS-Protection":       "0",
+	}
+
+	for header, expected := range expectedHeaders {
+		if got := w.Header().Get(header); got != expected {
+			t.Errorf("Expected %s header to be %q, got %q", header, expected, got)
+		}
+	}
+
+	csp := w.Header().Get("Content-Security-Policy")
+	if csp == "" {
+		t.Error("Expected Content-Security-Policy header to be set")
+	}
+	if !containsAll(csp, "default-src", "'self'", "script-src", "style-src") {
+		t.Errorf("Content-Security-Policy missing expected directives: %s", csp)
+	}
+}
+
+func containsAll(s string, substrings ...string) bool {
+	for _, sub := range substrings {
+		if !strings.Contains(s, sub) {
+			return false
+		}
+	}
+	return true
 }
