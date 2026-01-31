@@ -14,6 +14,8 @@ import (
 	"github.com/rockstaedt/atmos/internal/domain"
 )
 
+const sessionDuration = 14 * 24 * time.Hour // 14 days
+
 const sessionCookieName = "atmos_session"
 
 // MeasurementService defines the interface for measurement operations
@@ -27,6 +29,7 @@ type MeasurementService interface {
 type Server struct {
 	addr         string
 	service      MeasurementService
+	sessions     domain.SessionRepository
 	templates    map[string]*template.Template
 	mux          *http.ServeMux
 	apiKey       string
@@ -40,6 +43,7 @@ type Config struct {
 	APIKey       string
 	DashboardKey string
 	Version      string
+	Sessions     domain.SessionRepository
 }
 
 func NewServer(cfg Config, service MeasurementService) (*Server, error) {
@@ -122,6 +126,7 @@ func NewServer(cfg Config, service MeasurementService) (*Server, error) {
 	s := &Server{
 		addr:         fmt.Sprintf(":%d", cfg.Port),
 		service:      service,
+		sessions:     cfg.Sessions,
 		templates:    templates,
 		mux:          http.NewServeMux(),
 		apiKey:       cfg.APIKey,
@@ -229,6 +234,23 @@ func (s *Server) requireDashboardAuth(next http.HandlerFunc) http.HandlerFunc {
 
 // isValidSession checks if the session cookie value is valid
 func (s *Server) isValidSession(sessionValue string) bool {
+	// If session repository is available, use opaque tokens
+	if s.sessions != nil {
+		session, err := s.sessions.FindByToken(context.Background(), sessionValue)
+		if err != nil {
+			return false
+		}
+		if session.IsExpired() {
+			// Clean up expired session
+			_ = s.sessions.Delete(context.Background(), session.ID)
+			return false
+		}
+		// Update last accessed time
+		_ = s.sessions.UpdateLastAccessed(context.Background(), session.ID, time.Now().UTC())
+		return true
+	}
+
+	// Fallback to legacy mode (direct key comparison)
 	return subtle.ConstantTimeCompare([]byte(sessionValue), []byte(s.dashboardKey)) == 1
 }
 
@@ -261,21 +283,53 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Set session cookie
+	var cookieValue string
+	maxAge := int(sessionDuration.Seconds())
+
+	// If session repository is available, create an opaque session token
+	if s.sessions != nil {
+		session, err := domain.NewSession(sessionDuration)
+		if err != nil {
+			log.Printf("failed to create session: %v", err)
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+			return
+		}
+
+		if err := s.sessions.Create(r.Context(), session); err != nil {
+			log.Printf("failed to save session: %v", err)
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+			return
+		}
+
+		cookieValue = session.Token
+	} else {
+		// Legacy mode: use dashboard key directly
+		cookieValue = s.dashboardKey
+	}
+
 	http.SetCookie(w, &http.Cookie{
 		Name:     sessionCookieName,
-		Value:    s.dashboardKey,
+		Value:    cookieValue,
 		Path:     "/",
 		HttpOnly: true,
 		Secure:   true,
 		SameSite: http.SameSiteLaxMode,
-		MaxAge:   86400 * 14, // 14 days
+		MaxAge:   maxAge,
 	})
 
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
 func (s *Server) handleLogout(w http.ResponseWriter, r *http.Request) {
+	// If session repository is available, delete the session
+	if s.sessions != nil {
+		if cookie, err := r.Cookie(sessionCookieName); err == nil {
+			if session, err := s.sessions.FindByToken(r.Context(), cookie.Value); err == nil {
+				_ = s.sessions.Delete(r.Context(), session.ID)
+			}
+		}
+	}
+
 	http.SetCookie(w, &http.Cookie{
 		Name:     sessionCookieName,
 		Value:    "",

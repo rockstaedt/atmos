@@ -57,6 +57,60 @@ func (m *mockMeasurementService) GetAllRooms(ctx context.Context) ([]*domain.Roo
 	return nil, nil
 }
 
+// Mock session repository
+type mockSessionRepository struct {
+	sessions map[string]*domain.Session
+}
+
+func newMockSessionRepository() *mockSessionRepository {
+	return &mockSessionRepository{
+		sessions: make(map[string]*domain.Session),
+	}
+}
+
+func (m *mockSessionRepository) Create(ctx context.Context, session *domain.Session) error {
+	m.sessions[session.Token] = session
+	return nil
+}
+
+func (m *mockSessionRepository) FindByToken(ctx context.Context, token string) (*domain.Session, error) {
+	session, ok := m.sessions[token]
+	if !ok {
+		return nil, domain.ErrSessionNotFound
+	}
+	return session, nil
+}
+
+func (m *mockSessionRepository) UpdateLastAccessed(ctx context.Context, id string, accessedAt time.Time) error {
+	for _, s := range m.sessions {
+		if s.ID == id {
+			s.LastAccessedAt = accessedAt
+			return nil
+		}
+	}
+	return domain.ErrSessionNotFound
+}
+
+func (m *mockSessionRepository) Delete(ctx context.Context, id string) error {
+	for token, s := range m.sessions {
+		if s.ID == id {
+			delete(m.sessions, token)
+			return nil
+		}
+	}
+	return nil
+}
+
+func (m *mockSessionRepository) DeleteExpired(ctx context.Context) error {
+	now := time.Now().UTC()
+	for token, s := range m.sessions {
+		if s.ExpiresAt.Before(now) {
+			delete(m.sessions, token)
+		}
+	}
+	return nil
+}
+
 func TestHandlePostMeasurement(t *testing.T) {
 	tests := []struct {
 		name           string
@@ -485,4 +539,88 @@ func containsAll(s string, substrings ...string) bool {
 		}
 	}
 	return true
+}
+
+func TestOpaqueSessionAuthentication(t *testing.T) {
+	sessionRepo := newMockSessionRepository()
+
+	server := &Server{
+		service:      &mockMeasurementService{},
+		sessions:     sessionRepo,
+		mux:          http.NewServeMux(),
+		apiKey:       testAPIKey,
+		dashboardKey: testDashboardKey,
+	}
+	server.routes(emptyFS)
+
+	t.Run("valid opaque session token grants access", func(t *testing.T) {
+		// Create a valid session
+		session, _ := domain.NewSession(24 * time.Hour)
+		sessionRepo.sessions[session.Token] = session
+
+		req := httptest.NewRequest("GET", "/api/rooms", nil)
+		req.AddCookie(&http.Cookie{Name: sessionCookieName, Value: session.Token})
+		w := httptest.NewRecorder()
+
+		server.ServeHTTP(w, req)
+
+		if w.Code != http.StatusOK {
+			t.Errorf("Expected status %d with valid session token, got %d", http.StatusOK, w.Code)
+		}
+	})
+
+	t.Run("expired session token is rejected", func(t *testing.T) {
+		// Create an expired session
+		expiredSession := &domain.Session{
+			ID:             "expired-id",
+			Token:          "expired-token",
+			CreatedAt:      time.Now().UTC().Add(-48 * time.Hour),
+			ExpiresAt:      time.Now().UTC().Add(-24 * time.Hour),
+			LastAccessedAt: time.Now().UTC().Add(-48 * time.Hour),
+		}
+		sessionRepo.sessions[expiredSession.Token] = expiredSession
+
+		req := httptest.NewRequest("GET", "/api/rooms", nil)
+		req.AddCookie(&http.Cookie{Name: sessionCookieName, Value: expiredSession.Token})
+		w := httptest.NewRecorder()
+
+		server.ServeHTTP(w, req)
+
+		if w.Code != http.StatusUnauthorized {
+			t.Errorf("Expected status %d with expired session, got %d", http.StatusUnauthorized, w.Code)
+		}
+	})
+
+	t.Run("invalid session token is rejected", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/api/rooms", nil)
+		req.AddCookie(&http.Cookie{Name: sessionCookieName, Value: "invalid-token"})
+		w := httptest.NewRecorder()
+
+		server.ServeHTTP(w, req)
+
+		if w.Code != http.StatusUnauthorized {
+			t.Errorf("Expected status %d with invalid token, got %d", http.StatusUnauthorized, w.Code)
+		}
+	})
+
+	t.Run("legacy mode works when sessions is nil", func(t *testing.T) {
+		legacyServer := &Server{
+			service:      &mockMeasurementService{},
+			sessions:     nil, // No session repository
+			mux:          http.NewServeMux(),
+			apiKey:       testAPIKey,
+			dashboardKey: testDashboardKey,
+		}
+		legacyServer.routes(emptyFS)
+
+		req := httptest.NewRequest("GET", "/api/rooms", nil)
+		req.AddCookie(&http.Cookie{Name: sessionCookieName, Value: testDashboardKey})
+		w := httptest.NewRecorder()
+
+		legacyServer.ServeHTTP(w, req)
+
+		if w.Code != http.StatusOK {
+			t.Errorf("Expected status %d with legacy auth, got %d", http.StatusOK, w.Code)
+		}
+	})
 }
