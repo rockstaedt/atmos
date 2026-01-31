@@ -20,7 +20,7 @@ func TestMigrate(t *testing.T) {
 	}
 
 	// Verify tables exist
-	tables := []string{"rooms", "measurements"}
+	tables := []string{"rooms", "measurements", "sessions"}
 	for _, table := range tables {
 		var name string
 		err := db.QueryRow(
@@ -37,6 +37,8 @@ func TestMigrate(t *testing.T) {
 		"idx_measurements_room_timestamp",
 		"idx_measurements_timestamp",
 		"idx_measurements_room",
+		"idx_sessions_token",
+		"idx_sessions_expires_at",
 	}
 	for _, index := range indexes {
 		var name string
@@ -87,7 +89,7 @@ func TestMigrateDown(t *testing.T) {
 	// Verify tables no longer exist
 	var count int
 	err = db.QueryRow(
-		"SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name IN ('rooms', 'measurements')",
+		"SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name IN ('rooms', 'measurements', 'sessions')",
 	).Scan(&count)
 	if err != nil {
 		t.Fatalf("failed to query tables: %v", err)
@@ -116,7 +118,7 @@ func TestGetMigrationVersion(t *testing.T) {
 		t.Error("expected clean state before migrations")
 	}
 
-	// After migrations, version should be 1
+	// After migrations, version should be 2
 	if err := Migrate(db); err != nil {
 		t.Fatalf("failed to run migrations: %v", err)
 	}
@@ -125,8 +127,8 @@ func TestGetMigrationVersion(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to get version after migration: %v", err)
 	}
-	if version != 1 {
-		t.Errorf("expected version 1 after migrations, got %d", version)
+	if version != 2 {
+		t.Errorf("expected version 2 after migrations, got %d", version)
 	}
 	if dirty {
 		t.Error("expected clean state after migrations")
