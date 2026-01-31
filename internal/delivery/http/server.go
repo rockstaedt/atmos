@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/rockstaedt/atmos/internal/domain"
+	"github.com/rockstaedt/atmos/internal/infrastructure/ratelimit"
 )
 
 const sessionDuration = 14 * 24 * time.Hour // 14 days
@@ -33,6 +34,7 @@ type Server struct {
 	addr         string
 	service      MeasurementService
 	sessions     domain.SessionRepository
+	loginLimiter *ratelimit.Limiter
 	templates    map[string]*template.Template
 	mux          *http.ServeMux
 	apiKey       string
@@ -126,10 +128,14 @@ func NewServer(cfg Config, service MeasurementService) (*Server, error) {
 		return nil, fmt.Errorf("failed to create static filesystem: %w", err)
 	}
 
+	// Create login rate limiter: 5 attempts per minute per IP
+	loginLimiter := ratelimit.NewLimiter(5, time.Minute)
+
 	s := &Server{
 		addr:         fmt.Sprintf(":%d", cfg.Port),
 		service:      service,
 		sessions:     cfg.Sessions,
+		loginLimiter: loginLimiter,
 		templates:    templates,
 		mux:          http.NewServeMux(),
 		apiKey:       cfg.APIKey,
@@ -148,9 +154,9 @@ func (s *Server) routes(staticFS fs.FS) {
 	s.mux.HandleFunc("GET /api/rooms", s.requireAPIKey(s.handleGetRooms))
 	s.mux.HandleFunc("GET /api/rooms/{roomID}/measurements", s.requireAPIKey(s.handleGetMeasurements))
 
-	// Authentication endpoints
+	// Authentication endpoints (login is rate limited)
 	s.mux.HandleFunc("GET /login", s.handleLoginPage)
-	s.mux.HandleFunc("POST /login", s.requireCSRF(s.handleLogin))
+	s.mux.HandleFunc("POST /login", s.requireRateLimit(s.loginLimiter, s.requireCSRF(s.handleLogin)))
 	s.mux.HandleFunc("POST /logout", s.requireCSRF(s.handleLogout))
 
 	// Web UI endpoints (protected by dashboard auth)
@@ -399,6 +405,41 @@ func (s *Server) requireCSRF(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if !s.validateCSRF(r) {
 			http.Error(w, "Invalid CSRF token", http.StatusForbidden)
+			return
+		}
+		next(w, r)
+	}
+}
+
+// getClientIP extracts the client IP address from the request
+func getClientIP(r *http.Request) string {
+	// Check X-Forwarded-For header first (for reverse proxies)
+	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
+		// Take the first IP in the list
+		for i := 0; i < len(xff); i++ {
+			if xff[i] == ',' {
+				return xff[:i]
+			}
+		}
+		return xff
+	}
+
+	// Check X-Real-IP header
+	if xri := r.Header.Get("X-Real-IP"); xri != "" {
+		return xri
+	}
+
+	// Fall back to RemoteAddr
+	return r.RemoteAddr
+}
+
+// requireRateLimit wraps a handler with rate limiting
+func (s *Server) requireRateLimit(limiter *ratelimit.Limiter, next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		clientIP := getClientIP(r)
+		if !limiter.Allow(clientIP) {
+			w.Header().Set("Retry-After", "60")
+			http.Error(w, "Too many requests. Please try again later.", http.StatusTooManyRequests)
 			return
 		}
 		next(w, r)

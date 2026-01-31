@@ -13,6 +13,7 @@ import (
 
 	"github.com/rockstaedt/atmos/internal/application"
 	"github.com/rockstaedt/atmos/internal/domain"
+	"github.com/rockstaedt/atmos/internal/infrastructure/ratelimit"
 )
 
 // emptyFS is an empty filesystem for tests
@@ -691,4 +692,53 @@ func TestCSRFValidation(t *testing.T) {
 			t.Error("CSRF validation should have passed with matching header token")
 		}
 	})
+}
+
+func TestLoginRateLimiting(t *testing.T) {
+	server := &Server{
+		service:      &mockMeasurementService{},
+		loginLimiter: ratelimit.NewLimiter(5, time.Minute),
+		mux:          http.NewServeMux(),
+		apiKey:       testAPIKey,
+		dashboardKey: testDashboardKey,
+	}
+	server.routes(emptyFS)
+
+	csrfToken := "test-csrf-token"
+
+	// Make 5 requests (the limit)
+	for i := 0; i < 5; i++ {
+		formData := "csrf_token=" + csrfToken + "&key=wrong-key"
+		req := httptest.NewRequest("POST", "/login", strings.NewReader(formData))
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		req.AddCookie(&http.Cookie{Name: csrfCookieName, Value: csrfToken})
+		req.RemoteAddr = "192.168.1.1:12345"
+		w := httptest.NewRecorder()
+
+		server.ServeHTTP(w, req)
+
+		// Should not be rate limited yet
+		if w.Code == http.StatusTooManyRequests {
+			t.Errorf("request %d should not be rate limited", i+1)
+		}
+	}
+
+	// 6th request should be rate limited
+	formData := "csrf_token=" + csrfToken + "&key=wrong-key"
+	req := httptest.NewRequest("POST", "/login", strings.NewReader(formData))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.AddCookie(&http.Cookie{Name: csrfCookieName, Value: csrfToken})
+	req.RemoteAddr = "192.168.1.1:12345"
+	w := httptest.NewRecorder()
+
+	server.ServeHTTP(w, req)
+
+	if w.Code != http.StatusTooManyRequests {
+		t.Errorf("6th request should be rate limited, got status %d", w.Code)
+	}
+
+	// Verify Retry-After header is set
+	if w.Header().Get("Retry-After") == "" {
+		t.Error("Retry-After header should be set when rate limited")
+	}
 }
