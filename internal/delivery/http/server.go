@@ -17,6 +17,9 @@ import (
 const sessionDuration = 14 * 24 * time.Hour // 14 days
 
 const sessionCookieName = "atmos_session"
+const csrfCookieName = "atmos_csrf"
+const csrfFormField = "csrf_token"
+const csrfHeaderName = "X-CSRF-Token"
 
 // MeasurementService defines the interface for measurement operations
 type MeasurementService interface {
@@ -147,8 +150,8 @@ func (s *Server) routes(staticFS fs.FS) {
 
 	// Authentication endpoints
 	s.mux.HandleFunc("GET /login", s.handleLoginPage)
-	s.mux.HandleFunc("POST /login", s.handleLogin)
-	s.mux.HandleFunc("POST /logout", s.handleLogout)
+	s.mux.HandleFunc("POST /login", s.requireCSRF(s.handleLogin))
+	s.mux.HandleFunc("POST /logout", s.requireCSRF(s.handleLogout))
 
 	// Web UI endpoints (protected by dashboard auth)
 	s.mux.HandleFunc("GET /", s.requireDashboardAuth(s.handleDashboard))
@@ -261,8 +264,10 @@ func (s *Server) handleLoginPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	csrfToken := s.ensureCSRFCookie(w, r)
 	data := map[string]interface{}{
-		"Error": nil,
+		"Error":     nil,
+		"CSRFToken": csrfToken,
 	}
 	_ = s.templates["login.html"].ExecuteTemplate(w, "base", data)
 }
@@ -341,4 +346,61 @@ func (s *Server) handleLogout(w http.ResponseWriter, r *http.Request) {
 	})
 
 	http.Redirect(w, r, "/login", http.StatusSeeOther)
+}
+
+// ensureCSRFCookie sets a CSRF cookie if not already present and returns the token
+func (s *Server) ensureCSRFCookie(w http.ResponseWriter, r *http.Request) string {
+	if cookie, err := r.Cookie(csrfCookieName); err == nil && cookie.Value != "" {
+		return cookie.Value
+	}
+
+	token, err := domain.GenerateCSRFToken()
+	if err != nil {
+		log.Printf("failed to generate CSRF token: %v", err)
+		return ""
+	}
+
+	http.SetCookie(w, &http.Cookie{
+		Name:     csrfCookieName,
+		Value:    token,
+		Path:     "/",
+		HttpOnly: false, // Must be readable by JavaScript for AJAX requests
+		Secure:   true,
+		SameSite: http.SameSiteStrictMode,
+		MaxAge:   int(sessionDuration.Seconds()),
+	})
+
+	return token
+}
+
+// validateCSRF checks that the CSRF token in the request matches the cookie
+func (s *Server) validateCSRF(r *http.Request) bool {
+	cookie, err := r.Cookie(csrfCookieName)
+	if err != nil || cookie.Value == "" {
+		return false
+	}
+
+	// Check header first (for AJAX requests)
+	headerToken := r.Header.Get(csrfHeaderName)
+	if headerToken != "" {
+		return subtle.ConstantTimeCompare([]byte(headerToken), []byte(cookie.Value)) == 1
+	}
+
+	// Fall back to form field
+	if err := r.ParseForm(); err != nil {
+		return false
+	}
+	formToken := r.FormValue(csrfFormField)
+	return subtle.ConstantTimeCompare([]byte(formToken), []byte(cookie.Value)) == 1
+}
+
+// requireCSRF wraps a handler with CSRF validation
+func (s *Server) requireCSRF(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if !s.validateCSRF(r) {
+			http.Error(w, "Invalid CSRF token", http.StatusForbidden)
+			return
+		}
+		next(w, r)
+	}
 }

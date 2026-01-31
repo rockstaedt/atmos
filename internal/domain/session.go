@@ -21,6 +21,7 @@ type Session struct {
 var (
 	ErrSessionNotFound = errors.New("session not found")
 	ErrSessionExpired  = errors.New("session has expired")
+	ErrInvalidCSRF     = errors.New("invalid or missing CSRF token")
 )
 
 // IsExpired checks if the session has expired
@@ -57,6 +58,11 @@ func generateSecureToken(bytes int) (string, error) {
 		return "", err
 	}
 	return base64.URLEncoding.EncodeToString(b), nil
+}
+
+// GenerateCSRFToken generates a new CSRF token
+func GenerateCSRFToken() (string, error) {
+	return generateSecureToken(32)
 }
 
 // SessionRepository defines the interface for session persistence

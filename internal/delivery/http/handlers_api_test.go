@@ -624,3 +624,71 @@ func TestOpaqueSessionAuthentication(t *testing.T) {
 		}
 	})
 }
+
+func TestCSRFValidation(t *testing.T) {
+	server := &Server{
+		service:      &mockMeasurementService{},
+		mux:          http.NewServeMux(),
+		apiKey:       testAPIKey,
+		dashboardKey: testDashboardKey,
+	}
+	server.routes(emptyFS)
+
+	t.Run("POST without CSRF token is rejected", func(t *testing.T) {
+		req := httptest.NewRequest("POST", "/logout", nil)
+		w := httptest.NewRecorder()
+
+		server.ServeHTTP(w, req)
+
+		if w.Code != http.StatusForbidden {
+			t.Errorf("Expected status %d without CSRF token, got %d", http.StatusForbidden, w.Code)
+		}
+	})
+
+	t.Run("POST with matching CSRF token is accepted", func(t *testing.T) {
+		csrfToken := "test-csrf-token"
+
+		formData := "csrf_token=" + csrfToken
+		req := httptest.NewRequest("POST", "/logout", strings.NewReader(formData))
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		req.AddCookie(&http.Cookie{Name: csrfCookieName, Value: csrfToken})
+		w := httptest.NewRecorder()
+
+		server.ServeHTTP(w, req)
+
+		// Logout should redirect, not give forbidden
+		if w.Code == http.StatusForbidden {
+			t.Error("CSRF validation should have passed with matching token")
+		}
+	})
+
+	t.Run("POST with mismatched CSRF token is rejected", func(t *testing.T) {
+		formData := "csrf_token=wrong-token"
+		req := httptest.NewRequest("POST", "/logout", strings.NewReader(formData))
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		req.AddCookie(&http.Cookie{Name: csrfCookieName, Value: "correct-token"})
+		w := httptest.NewRecorder()
+
+		server.ServeHTTP(w, req)
+
+		if w.Code != http.StatusForbidden {
+			t.Errorf("Expected status %d with mismatched CSRF token, got %d", http.StatusForbidden, w.Code)
+		}
+	})
+
+	t.Run("POST with CSRF header is accepted", func(t *testing.T) {
+		csrfToken := "test-csrf-token"
+
+		req := httptest.NewRequest("POST", "/logout", nil)
+		req.Header.Set("X-CSRF-Token", csrfToken)
+		req.AddCookie(&http.Cookie{Name: csrfCookieName, Value: csrfToken})
+		w := httptest.NewRecorder()
+
+		server.ServeHTTP(w, req)
+
+		// Logout should redirect, not give forbidden
+		if w.Code == http.StatusForbidden {
+			t.Error("CSRF validation should have passed with matching header token")
+		}
+	})
+}
