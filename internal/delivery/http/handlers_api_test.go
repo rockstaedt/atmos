@@ -380,6 +380,67 @@ func TestHandleHealth(t *testing.T) {
 	}
 }
 
+func TestSecurityHeaders(t *testing.T) {
+	server := &Server{
+		mux:          http.NewServeMux(),
+		dashboardKey: testDashboardKey,
+	}
+	server.routes(emptyFS)
+
+	req := httptest.NewRequest("GET", "/health", nil)
+	w := httptest.NewRecorder()
+
+	server.ServeHTTP(w, req)
+
+	tests := []struct {
+		header   string
+		expected string
+	}{
+		{"X-Content-Type-Options", "nosniff"},
+		{"X-Frame-Options", "DENY"},
+		{"Referrer-Policy", "strict-origin-when-cross-origin"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.header, func(t *testing.T) {
+			if got := w.Header().Get(tt.header); got != tt.expected {
+				t.Errorf("%s = %q, want %q", tt.header, got, tt.expected)
+			}
+		})
+	}
+
+	// Check CSP contains required directives
+	csp := w.Header().Get("Content-Security-Policy")
+	if csp == "" {
+		t.Error("Content-Security-Policy header is missing")
+	}
+	if !contains(csp, "default-src 'self'") {
+		t.Errorf("CSP missing default-src directive: %s", csp)
+	}
+	if !contains(csp, "frame-ancestors 'none'") {
+		t.Errorf("CSP missing frame-ancestors directive: %s", csp)
+	}
+
+	// Check Permissions-Policy
+	pp := w.Header().Get("Permissions-Policy")
+	if pp == "" {
+		t.Error("Permissions-Policy header is missing")
+	}
+}
+
+func contains(s, substr string) bool {
+	return len(s) >= len(substr) && (s == substr || len(s) > 0 && containsHelper(s, substr))
+}
+
+func containsHelper(s, substr string) bool {
+	for i := 0; i <= len(s)-len(substr); i++ {
+		if s[i:i+len(substr)] == substr {
+			return true
+		}
+	}
+	return false
+}
+
 func TestDashboardAuthentication(t *testing.T) {
 	server := &Server{
 		service:      &mockMeasurementService{},
