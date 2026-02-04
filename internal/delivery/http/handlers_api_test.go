@@ -111,6 +111,12 @@ func TestHandlePostMeasurement(t *testing.T) {
 			},
 			expectedStatus: http.StatusBadRequest,
 		},
+		{
+			name:           "request body too large",
+			payload:        string(make([]byte, 2<<20)), // 2MB
+			recordFn:       nil,
+			expectedStatus: http.StatusBadRequest,
+		},
 	}
 
 	for _, tt := range tests {

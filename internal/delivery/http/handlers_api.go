@@ -11,6 +11,9 @@ import (
 )
 
 func (s *Server) handlePostMeasurement(w http.ResponseWriter, r *http.Request) {
+	// Limit request body to 1MB to prevent resource exhaustion
+	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
+
 	var dto application.MeasurementDTO
 
 	if err := json.NewDecoder(r.Body).Decode(&dto); err != nil {
