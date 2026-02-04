@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 
+	"github.com/rockstaedt/atmos/internal/infrastructure/sqlite/migrations"
 	_ "modernc.org/sqlite"
 )
 
@@ -30,9 +31,9 @@ func NewConnection(cfg Config) (*sql.DB, error) {
 		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
 
-	// Initialize schema
-	if _, err := db.Exec(schema); err != nil {
-		return nil, fmt.Errorf("failed to initialize schema: %w", err)
+	// Run migrations
+	if err := migrations.Run(db); err != nil {
+		return nil, fmt.Errorf("failed to run migrations: %w", err)
 	}
 
 	return db, nil
