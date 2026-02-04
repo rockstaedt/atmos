@@ -241,6 +241,23 @@ func (s *Server) isValidSession(sessionValue string) bool {
 	return subtle.ConstantTimeCompare([]byte(sessionValue), []byte(s.dashboardKey)) == 1
 }
 
+// isValidRoomID validates a room ID (max 64 chars, alphanumeric + hyphen/underscore)
+func isValidRoomID(roomID string) bool {
+	if len(roomID) == 0 || len(roomID) > 64 {
+		return false
+	}
+	for _, c := range roomID {
+		isLower := c >= 'a' && c <= 'z'
+		isUpper := c >= 'A' && c <= 'Z'
+		isDigit := c >= '0' && c <= '9'
+		isAllowed := isLower || isUpper || isDigit || c == '-' || c == '_'
+		if !isAllowed {
+			return false
+		}
+	}
+	return true
+}
+
 func (s *Server) handleLoginPage(w http.ResponseWriter, r *http.Request) {
 	// If already logged in, redirect to dashboard
 	if cookie, err := r.Cookie(sessionCookieName); err == nil && s.isValidSession(cookie.Value) {

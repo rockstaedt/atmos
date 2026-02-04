@@ -109,6 +109,12 @@ func (s *Server) handleDashboardFragment(w http.ResponseWriter, r *http.Request)
 func (s *Server) handleRoomDetail(w http.ResponseWriter, r *http.Request) {
 	roomID := r.PathValue("roomID")
 
+	// Validate room ID
+	if !isValidRoomID(roomID) {
+		http.Error(w, "Invalid room ID", http.StatusBadRequest)
+		return
+	}
+
 	data, err := s.buildRoomDetailView(r.Context(), roomID)
 	if err != nil {
 		log.Printf("Failed to build room detail view for %s: %v", roomID, err)
@@ -130,6 +136,12 @@ func (s *Server) handleRoomDetail(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleRoomDetailFragment(w http.ResponseWriter, r *http.Request) {
 	roomID := r.PathValue("roomID")
+
+	// Validate room ID
+	if !isValidRoomID(roomID) {
+		http.Error(w, "Invalid room ID", http.StatusBadRequest)
+		return
+	}
 
 	data, err := s.buildRoomDetailView(r.Context(), roomID)
 	if err != nil {

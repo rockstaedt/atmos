@@ -22,6 +22,12 @@ func (s *Server) handlePostMeasurement(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Validate room ID
+	if !isValidRoomID(dto.RoomID) {
+		http.Error(w, "Invalid room ID", http.StatusBadRequest)
+		return
+	}
+
 	// Convert DTO to domain entity
 	measurement := &domain.Measurement{
 		RoomID:      dto.RoomID,
@@ -62,6 +68,12 @@ func (s *Server) handleGetRooms(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleGetMeasurements(w http.ResponseWriter, r *http.Request) {
 	roomID := r.PathValue("roomID")
+
+	// Validate room ID
+	if !isValidRoomID(roomID) {
+		http.Error(w, "Invalid room ID", http.StatusBadRequest)
+		return
+	}
 
 	// Parse time range from query params (default to 24h)
 	rangeParam := r.URL.Query().Get("range")

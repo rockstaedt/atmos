@@ -508,3 +508,83 @@ func TestDashboardAuthentication(t *testing.T) {
 		}
 	})
 }
+
+func TestRoomIDValidation(t *testing.T) {
+	tests := []struct {
+		name    string
+		roomID  string
+		isValid bool
+	}{
+		{"valid simple", "living-room", true},
+		{"valid with underscore", "room_1", true},
+		{"valid alphanumeric", "Room123", true},
+		{"valid mixed", "My-Room_42", true},
+		{"valid max length", string(make([]byte, 64)), false}, // 64 null bytes are invalid chars
+		{"empty", "", false},
+		{"too long", string(make([]byte, 65)), false},
+		{"invalid space", "living room", false},
+		{"invalid dot", "room.1", false},
+		{"invalid slash", "room/1", false},
+		{"invalid special chars", "room<>", false},
+		{"invalid sql injection attempt", "room'; DROP TABLE--", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// For the max length test, use valid chars
+			roomID := tt.roomID
+			if tt.name == "valid max length" {
+				roomID = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" // 64 'a's
+			}
+			if tt.name == "too long" {
+				roomID = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" // 65 'a's
+			}
+
+			got := isValidRoomID(roomID)
+
+			// Adjust expected for our corrected test values
+			expected := tt.isValid
+			if tt.name == "valid max length" {
+				expected = true
+			}
+
+			if got != expected {
+				t.Errorf("isValidRoomID(%q) = %v, want %v", roomID, got, expected)
+			}
+		})
+	}
+}
+
+func TestRoomIDValidationInAPI(t *testing.T) {
+	server := &Server{
+		service:      &mockMeasurementService{},
+		mux:          http.NewServeMux(),
+		apiKey:       testAPIKey,
+		dashboardKey: testDashboardKey,
+	}
+	server.routes(emptyFS)
+
+	t.Run("invalid roomID in measurements endpoint", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/api/rooms/room<script>/measurements", nil)
+		req.Header.Set("Authorization", "Bearer "+testAPIKey)
+		w := httptest.NewRecorder()
+
+		server.ServeHTTP(w, req)
+
+		if w.Code != http.StatusBadRequest {
+			t.Errorf("Expected status %d, got %d", http.StatusBadRequest, w.Code)
+		}
+	})
+
+	t.Run("valid roomID in measurements endpoint", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/api/rooms/living-room/measurements", nil)
+		req.Header.Set("Authorization", "Bearer "+testAPIKey)
+		w := httptest.NewRecorder()
+
+		server.ServeHTTP(w, req)
+
+		if w.Code != http.StatusOK {
+			t.Errorf("Expected status %d, got %d", http.StatusOK, w.Code)
+		}
+	})
+}
