@@ -18,7 +18,7 @@ func setupTestDB(t *testing.T) *sql.DB {
 
 func TestRun_FreshDatabase(t *testing.T) {
 	db := setupTestDB(t)
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	if err := Run(db); err != nil {
 		t.Fatalf("Run failed: %v", err)
@@ -49,7 +49,7 @@ func TestRun_FreshDatabase(t *testing.T) {
 
 func TestRun_Idempotency(t *testing.T) {
 	db := setupTestDB(t)
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	// Run migrations twice
 	if err := Run(db); err != nil {
@@ -73,7 +73,7 @@ func TestRun_Idempotency(t *testing.T) {
 
 func TestRun_MigrationOrdering(t *testing.T) {
 	db := setupTestDB(t)
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	// Clear registry and add migrations out of order
 	originalRegistry := registry
@@ -114,7 +114,7 @@ func TestRun_MigrationOrdering(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to query migrations: %v", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var versions []int
 	for rows.Next() {
@@ -138,7 +138,7 @@ func TestRun_MigrationOrdering(t *testing.T) {
 
 func TestRun_PartialMigrations(t *testing.T) {
 	db := setupTestDB(t)
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	// Clear registry
 	originalRegistry := registry
