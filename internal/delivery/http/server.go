@@ -218,6 +218,7 @@ func (s *Server) requireAPIKey(next http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
+		log.Printf("Failed API key authentication from %s", r.RemoteAddr)
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusUnauthorized)
 		_, _ = w.Write([]byte(`{"error":"unauthorized"}`))
@@ -229,6 +230,7 @@ func (s *Server) requireDashboardAuth(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		cookie, err := r.Cookie(sessionCookieName)
 		if err != nil || !s.isValidSession(cookie.Value) {
+			log.Printf("Failed dashboard authentication from %s", r.RemoteAddr)
 			http.Redirect(w, r, "/login", http.StatusSeeOther)
 			return
 		}
