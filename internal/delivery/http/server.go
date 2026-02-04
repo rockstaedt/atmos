@@ -187,6 +187,7 @@ func (s *Server) Start(ctx context.Context) error {
 		Handler:      s,
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 10 * time.Second,
+		IdleTimeout:  120 * time.Second,
 	}
 
 	log.Printf("Starting server on %s\n", s.addr)
