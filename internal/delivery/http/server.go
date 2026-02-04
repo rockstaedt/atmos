@@ -2,8 +2,10 @@ package http
 
 import (
 	"context"
+	"crypto/rand"
 	"crypto/subtle"
 	"embed"
+	"encoding/hex"
 	"fmt"
 	"html/template"
 	"io/fs"
@@ -24,9 +26,18 @@ type MeasurementService interface {
 	GetAllRooms(ctx context.Context) ([]*domain.Room, error)
 }
 
+// SessionRepository defines the interface for session persistence
+type SessionRepository interface {
+	Create(ctx context.Context, token string, expiresAt time.Time) error
+	Exists(ctx context.Context, token string) (bool, error)
+	Delete(ctx context.Context, token string) error
+	DeleteExpired(ctx context.Context) error
+}
+
 type Server struct {
 	addr         string
 	service      MeasurementService
+	sessionRepo  SessionRepository
 	templates    map[string]*template.Template
 	mux          *http.ServeMux
 	apiKey       string
@@ -40,6 +51,7 @@ type Config struct {
 	APIKey       string
 	DashboardKey string
 	Version      string
+	SessionRepo  SessionRepository
 }
 
 func NewServer(cfg Config, service MeasurementService) (*Server, error) {
@@ -122,6 +134,7 @@ func NewServer(cfg Config, service MeasurementService) (*Server, error) {
 	s := &Server{
 		addr:         fmt.Sprintf(":%d", cfg.Port),
 		service:      service,
+		sessionRepo:  cfg.SessionRepo,
 		templates:    templates,
 		mux:          http.NewServeMux(),
 		apiKey:       cfg.APIKey,
@@ -213,7 +226,7 @@ func (s *Server) requireAPIKey(next http.HandlerFunc) http.HandlerFunc {
 		}
 
 		// Fall back to dashboard session cookie
-		if cookie, err := r.Cookie(sessionCookieName); err == nil && s.isValidSession(cookie.Value) {
+		if cookie, err := r.Cookie(sessionCookieName); err == nil && s.isValidSession(r.Context(), cookie.Value) {
 			next(w, r)
 			return
 		}
@@ -229,7 +242,7 @@ func (s *Server) requireAPIKey(next http.HandlerFunc) http.HandlerFunc {
 func (s *Server) requireDashboardAuth(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		cookie, err := r.Cookie(sessionCookieName)
-		if err != nil || !s.isValidSession(cookie.Value) {
+		if err != nil || !s.isValidSession(r.Context(), cookie.Value) {
 			log.Printf("Failed dashboard authentication from %s", r.RemoteAddr)
 			http.Redirect(w, r, "/login", http.StatusSeeOther)
 			return
@@ -238,9 +251,23 @@ func (s *Server) requireDashboardAuth(next http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-// isValidSession checks if the session cookie value is valid
-func (s *Server) isValidSession(sessionValue string) bool {
-	return subtle.ConstantTimeCompare([]byte(sessionValue), []byte(s.dashboardKey)) == 1
+// isValidSession checks if the session token is valid in the database
+func (s *Server) isValidSession(ctx context.Context, token string) bool {
+	if s.sessionRepo == nil {
+		// Fallback to legacy comparison if no session repo configured
+		return subtle.ConstantTimeCompare([]byte(token), []byte(s.dashboardKey)) == 1
+	}
+	exists, err := s.sessionRepo.Exists(ctx, token)
+	return err == nil && exists
+}
+
+// generateSessionToken creates a cryptographically secure random token
+func generateSessionToken() (string, error) {
+	b := make([]byte, 32)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(b), nil
 }
 
 // isValidRoomID validates a room ID (max 64 chars, alphanumeric + hyphen/underscore)
@@ -262,7 +289,7 @@ func isValidRoomID(roomID string) bool {
 
 func (s *Server) handleLoginPage(w http.ResponseWriter, r *http.Request) {
 	// If already logged in, redirect to dashboard
-	if cookie, err := r.Cookie(sessionCookieName); err == nil && s.isValidSession(cookie.Value) {
+	if cookie, err := r.Cookie(sessionCookieName); err == nil && s.isValidSession(r.Context(), cookie.Value) {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
@@ -281,6 +308,7 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 
 	key := r.FormValue("key")
 	if subtle.ConstantTimeCompare([]byte(key), []byte(s.dashboardKey)) != 1 {
+		log.Printf("Failed login attempt from %s", r.RemoteAddr)
 		data := map[string]interface{}{
 			"Error": "Invalid access key",
 		}
@@ -289,10 +317,30 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Generate session token and store in database
+	token, err := generateSessionToken()
+	if err != nil {
+		log.Printf("Failed to generate session token: %v", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	expiresAt := time.Now().Add(14 * 24 * time.Hour)
+	if s.sessionRepo != nil {
+		if err := s.sessionRepo.Create(r.Context(), token, expiresAt); err != nil {
+			log.Printf("Failed to create session: %v", err)
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+			return
+		}
+	} else {
+		// Legacy fallback: use dashboard key as token
+		token = s.dashboardKey
+	}
+
 	// Set session cookie
 	http.SetCookie(w, &http.Cookie{
 		Name:     sessionCookieName,
-		Value:    s.dashboardKey,
+		Value:    token,
 		Path:     "/",
 		HttpOnly: true,
 		Secure:   true,
@@ -304,6 +352,12 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleLogout(w http.ResponseWriter, r *http.Request) {
+	// Delete session from database
+	if cookie, err := r.Cookie(sessionCookieName); err == nil && s.sessionRepo != nil {
+		_ = s.sessionRepo.Delete(r.Context(), cookie.Value)
+	}
+
+	// Clear cookie
 	http.SetCookie(w, &http.Cookie{
 		Name:     sessionCookieName,
 		Value:    "",

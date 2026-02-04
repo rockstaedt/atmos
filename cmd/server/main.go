@@ -36,8 +36,9 @@ func run() error {
 
 	fmt.Printf("Database initialized at: %s\n", dbPath)
 
-	// Initialize repository
+	// Initialize repositories
 	measurementRepo := sqlite.NewMeasurementRepository(db)
+	sessionRepo := sqlite.NewSessionRepository(db)
 
 	// Initialize service
 	measurementService := application.NewMeasurementService(measurementRepo)
@@ -59,6 +60,7 @@ func run() error {
 		APIKey:       apiKey,
 		DashboardKey: dashboardKey,
 		Version:      version,
+		SessionRepo:  sessionRepo,
 	}, measurementService)
 	if err != nil {
 		return fmt.Errorf("failed to initialize server: %w", err)

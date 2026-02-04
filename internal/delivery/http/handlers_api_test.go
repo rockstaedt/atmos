@@ -56,6 +56,55 @@ func (m *mockMeasurementService) GetAllRooms(ctx context.Context) ([]*domain.Roo
 	return nil, nil
 }
 
+// Mock session repository
+type mockSession struct {
+	Token     string
+	ExpiresAt time.Time
+	CreatedAt time.Time
+}
+
+type mockSessionRepository struct {
+	sessions map[string]*mockSession
+}
+
+func newMockSessionRepository() *mockSessionRepository {
+	return &mockSessionRepository{
+		sessions: make(map[string]*mockSession),
+	}
+}
+
+func (m *mockSessionRepository) Create(ctx context.Context, token string, expiresAt time.Time) error {
+	m.sessions[token] = &mockSession{
+		Token:     token,
+		ExpiresAt: expiresAt,
+		CreatedAt: time.Now(),
+	}
+	return nil
+}
+
+func (m *mockSessionRepository) Exists(ctx context.Context, token string) (bool, error) {
+	session, ok := m.sessions[token]
+	if !ok {
+		return false, nil
+	}
+	return time.Now().Before(session.ExpiresAt), nil
+}
+
+func (m *mockSessionRepository) Delete(ctx context.Context, token string) error {
+	delete(m.sessions, token)
+	return nil
+}
+
+func (m *mockSessionRepository) DeleteExpired(ctx context.Context) error {
+	now := time.Now()
+	for token, session := range m.sessions {
+		if now.After(session.ExpiresAt) {
+			delete(m.sessions, token)
+		}
+	}
+	return nil
+}
+
 func TestHandlePostMeasurement(t *testing.T) {
 	tests := []struct {
 		name           string
@@ -449,8 +498,13 @@ func containsHelper(s, substr string) bool {
 }
 
 func TestDashboardAuthentication(t *testing.T) {
+	sessionRepo := newMockSessionRepository()
+	validToken := "valid-session-token"
+	_ = sessionRepo.Create(context.Background(), validToken, time.Now().Add(24*time.Hour))
+
 	server := &Server{
 		service:      &mockMeasurementService{},
+		sessionRepo:  sessionRepo,
 		mux:          http.NewServeMux(),
 		apiKey:       testAPIKey,
 		dashboardKey: testDashboardKey,
@@ -495,7 +549,7 @@ func TestDashboardAuthentication(t *testing.T) {
 		})
 
 		req := httptest.NewRequest("GET", "/", nil)
-		req.AddCookie(&http.Cookie{Name: sessionCookieName, Value: testDashboardKey})
+		req.AddCookie(&http.Cookie{Name: sessionCookieName, Value: validToken})
 		w := httptest.NewRecorder()
 
 		testHandler(w, req)
@@ -505,6 +559,30 @@ func TestDashboardAuthentication(t *testing.T) {
 		}
 		if w.Code == http.StatusSeeOther {
 			t.Error("Should not redirect with valid session")
+		}
+	})
+
+	t.Run("dashboard with expired session redirects to login", func(t *testing.T) {
+		expiredToken := "expired-session-token"
+		_ = sessionRepo.Create(context.Background(), expiredToken, time.Now().Add(-1*time.Hour))
+
+		authPassed := false
+		testHandler := server.requireDashboardAuth(func(w http.ResponseWriter, r *http.Request) {
+			authPassed = true
+			w.WriteHeader(http.StatusOK)
+		})
+
+		req := httptest.NewRequest("GET", "/", nil)
+		req.AddCookie(&http.Cookie{Name: sessionCookieName, Value: expiredToken})
+		w := httptest.NewRecorder()
+
+		testHandler(w, req)
+
+		if authPassed {
+			t.Error("Auth middleware should not pass with expired session")
+		}
+		if w.Code != http.StatusSeeOther {
+			t.Errorf("Expected redirect status %d, got %d", http.StatusSeeOther, w.Code)
 		}
 	})
 }

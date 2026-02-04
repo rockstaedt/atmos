@@ -132,3 +132,57 @@ func TestSessionRepository_DeleteExpired(t *testing.T) {
 		t.Error("Expected valid session to still exist")
 	}
 }
+
+func TestSessionRepository_Exists(t *testing.T) {
+	db := setupTestDB(t)
+	defer func() { _ = db.Close() }()
+
+	repo := NewSessionRepository(db)
+	ctx := context.Background()
+
+	// Create a valid session
+	validToken := "valid-exists-token"
+	validAt := time.Now().Add(24 * time.Hour).UTC()
+	err := repo.Create(ctx, validToken, validAt)
+	if err != nil {
+		t.Fatalf("Create valid session failed: %v", err)
+	}
+
+	// Create an expired session
+	expiredToken := "expired-exists-token"
+	expiredAt := time.Now().Add(-1 * time.Hour).UTC()
+	err = repo.Create(ctx, expiredToken, expiredAt)
+	if err != nil {
+		t.Fatalf("Create expired session failed: %v", err)
+	}
+
+	t.Run("valid session exists", func(t *testing.T) {
+		exists, err := repo.Exists(ctx, validToken)
+		if err != nil {
+			t.Fatalf("Exists failed: %v", err)
+		}
+		if !exists {
+			t.Error("Expected valid session to exist")
+		}
+	})
+
+	t.Run("expired session does not exist", func(t *testing.T) {
+		exists, err := repo.Exists(ctx, expiredToken)
+		if err != nil {
+			t.Fatalf("Exists failed: %v", err)
+		}
+		if exists {
+			t.Error("Expected expired session to not exist")
+		}
+	})
+
+	t.Run("non-existent token does not exist", func(t *testing.T) {
+		exists, err := repo.Exists(ctx, "non-existent-token")
+		if err != nil {
+			t.Fatalf("Exists failed: %v", err)
+		}
+		if exists {
+			t.Error("Expected non-existent token to not exist")
+		}
+	})
+}

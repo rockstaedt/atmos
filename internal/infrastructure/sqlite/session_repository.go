@@ -54,6 +54,19 @@ func (r *SessionRepository) Get(ctx context.Context, token string) (*Session, er
 	return session, nil
 }
 
+// Exists checks if a valid (non-expired) session exists for the given token.
+func (r *SessionRepository) Exists(ctx context.Context, token string) (bool, error) {
+	var count int
+	err := r.db.QueryRowContext(ctx, `
+		SELECT COUNT(*) FROM sessions
+		WHERE token = ? AND expires_at > ?
+	`, token, time.Now().UTC()).Scan(&count)
+	if err != nil {
+		return false, fmt.Errorf("failed to check session: %w", err)
+	}
+	return count > 0, nil
+}
+
 // Delete removes a session by its token.
 func (r *SessionRepository) Delete(ctx context.Context, token string) error {
 	_, err := r.db.ExecContext(ctx, `
