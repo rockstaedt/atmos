@@ -2,6 +2,7 @@ package http
 
 import (
 	"context"
+	"log"
 	"net/http"
 	"sort"
 	"time"
@@ -76,28 +77,32 @@ func (s *Server) buildRoomDetailView(ctx context.Context, roomID string) (*roomD
 func (s *Server) handleDashboard(w http.ResponseWriter, r *http.Request) {
 	data, err := s.buildDashboardDTO(r.Context())
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Printf("Failed to build dashboard data: %v", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	tmpl := s.templates["dashboard.html"]
 	if err := tmpl.ExecuteTemplate(w, "base", pageData{Data: data, Version: s.version}); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Printf("Failed to render dashboard template: %v", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
 	}
 }
 
 func (s *Server) handleDashboardFragment(w http.ResponseWriter, r *http.Request) {
 	data, err := s.buildDashboardDTO(r.Context())
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Printf("Failed to build dashboard fragment data: %v", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	tmpl := s.templates["dashboard-fragment.html"]
 	if err := tmpl.ExecuteTemplate(w, "dashboard-fragment", data); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Printf("Failed to render dashboard fragment template: %v", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
 	}
 }
 
@@ -106,7 +111,8 @@ func (s *Server) handleRoomDetail(w http.ResponseWriter, r *http.Request) {
 
 	data, err := s.buildRoomDetailView(r.Context(), roomID)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Printf("Failed to build room detail view for %s: %v", roomID, err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
 	if data == nil {
@@ -117,7 +123,8 @@ func (s *Server) handleRoomDetail(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	tmpl := s.templates["room-detail.html"]
 	if err := tmpl.ExecuteTemplate(w, "base", pageData{Data: data, Version: s.version}); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Printf("Failed to render room detail template: %v", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
 	}
 }
 
@@ -126,7 +133,8 @@ func (s *Server) handleRoomDetailFragment(w http.ResponseWriter, r *http.Request
 
 	data, err := s.buildRoomDetailView(r.Context(), roomID)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Printf("Failed to build room detail fragment for %s: %v", roomID, err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
 	if data == nil {
@@ -137,6 +145,7 @@ func (s *Server) handleRoomDetailFragment(w http.ResponseWriter, r *http.Request
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	tmpl := s.templates["room-detail-fragment.html"]
 	if err := tmpl.ExecuteTemplate(w, "room-detail-fragment", data); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Printf("Failed to render room detail fragment template: %v", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
 	}
 }

@@ -2,7 +2,7 @@ package http
 
 import (
 	"encoding/json"
-	"fmt"
+	"log"
 	"net/http"
 	"time"
 
@@ -17,7 +17,8 @@ func (s *Server) handlePostMeasurement(w http.ResponseWriter, r *http.Request) {
 	var dto application.MeasurementDTO
 
 	if err := json.NewDecoder(r.Body).Decode(&dto); err != nil {
-		http.Error(w, fmt.Sprintf("Invalid JSON: %v", err), http.StatusBadRequest)
+		log.Printf("Invalid JSON in request: %v", err)
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
@@ -33,7 +34,8 @@ func (s *Server) handlePostMeasurement(w http.ResponseWriter, r *http.Request) {
 
 	// Record measurement
 	if err := s.service.RecordMeasurement(r.Context(), measurement); err != nil {
-		http.Error(w, fmt.Sprintf("Failed to record measurement: %v", err), http.StatusBadRequest)
+		log.Printf("Failed to record measurement: %v", err)
+		http.Error(w, "Failed to record measurement", http.StatusBadRequest)
 		return
 	}
 
@@ -49,7 +51,8 @@ func (s *Server) handlePostMeasurement(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleGetRooms(w http.ResponseWriter, r *http.Request) {
 	rooms, err := s.service.GetAllRooms(r.Context())
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Printf("Failed to get rooms: %v", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
 
@@ -75,7 +78,8 @@ func (s *Server) handleGetMeasurements(w http.ResponseWriter, r *http.Request) {
 
 	measurements, err := s.service.GetMeasurementHistory(r.Context(), roomID, duration)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Printf("Failed to get measurements for room %s: %v", roomID, err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
 
