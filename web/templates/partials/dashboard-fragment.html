@@ -47,6 +47,36 @@
                 {{end}}
             </div>
 
+            {{if .Stats}}
+            <div class="metric-group">
+                <div class="meta">24h averages</div>
+                <div class="metrics compact">
+                    <div class="metric compact">
+                        <span>Temperature</span>
+                        <strong class="accent-cool">{{printf "%.1f" .Stats.AvgTemperature}}°C</strong>
+                    </div>
+                    <div class="metric compact">
+                        <span>Humidity</span>
+                        <strong class="accent">{{printf "%.1f" .Stats.AvgHumidity}}%</strong>
+                    </div>
+                    <div class="metric compact">
+                        <span>Temp Range</span>
+                        <strong class="accent-cool">{{printf "%.1f" .Stats.MinTemperature}} - {{printf "%.1f" .Stats.MaxTemperature}}°C</strong>
+                    </div>
+                    <div class="metric compact">
+                        <span>Humidity Range</span>
+                        <strong class="accent">{{printf "%.1f" .Stats.MinHumidity}} - {{printf "%.1f" .Stats.MaxHumidity}}%</strong>
+                    </div>
+                    {{if .Stats.AvgCO2}}
+                    <div class="metric compact">
+                        <span>CO₂</span>
+                        <strong class="accent-warm">{{printf "%.0f" (derefFloat .Stats.AvgCO2)}} ppm</strong>
+                    </div>
+                    {{end}}
+                </div>
+            </div>
+            {{end}}
+
             <a href="/rooms/{{.ID}}" class="button">View Details</a>
         </article>
         {{else}}

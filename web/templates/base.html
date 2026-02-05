@@ -204,6 +204,10 @@
             gap: 12px;
         }
 
+        .metrics.compact {
+            gap: 8px;
+        }
+
         .metric {
             display: flex;
             align-items: center;
@@ -214,6 +218,10 @@
             border: 1px solid rgba(28, 27, 24, 0.06);
         }
 
+        .metric.compact {
+            padding: 10px 12px;
+        }
+
         .metric span {
             font-size: 0.95rem;
         }
@@ -221,6 +229,16 @@
         .metric strong {
             font-size: 1.3rem;
             font-weight: 600;
+        }
+
+        .metric.compact strong {
+            font-size: 1.1rem;
+        }
+
+        .metric-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
         }
 
         .metric .accent {

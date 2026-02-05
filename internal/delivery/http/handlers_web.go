@@ -3,6 +3,7 @@ package http
 import (
 	"context"
 	"log"
+	"math"
 	"net/http"
 	"sort"
 	"time"
@@ -32,6 +33,10 @@ func (s *Server) buildDashboardDTO(ctx context.Context) (*application.DashboardD
 	// Convert to DTOs
 	var roomCards []*application.RoomCardDTO
 	for roomID, m := range measurements {
+		stats, err := s.buildRoomStats(ctx, roomID, 24*time.Hour)
+		if err != nil {
+			return nil, err
+		}
 		roomCards = append(roomCards, &application.RoomCardDTO{
 			ID:              roomID,
 			Name:            roomID, // Can be enhanced later
@@ -40,6 +45,7 @@ func (s *Server) buildDashboardDTO(ctx context.Context) (*application.DashboardD
 			Pressure:        m.Pressure,
 			CO2:             m.CO2,
 			LastMeasurement: m.Timestamp,
+			Stats:           stats,
 		})
 	}
 
@@ -54,6 +60,54 @@ func (s *Server) buildDashboardDTO(ctx context.Context) (*application.DashboardD
 	}
 
 	return data, nil
+}
+
+func (s *Server) buildRoomStats(ctx context.Context, roomID string, duration time.Duration) (*application.RoomStatsDTO, error) {
+	measurements, err := s.service.GetMeasurementHistory(ctx, roomID, duration)
+	if err != nil {
+		return nil, err
+	}
+	if len(measurements) == 0 {
+		return nil, nil
+	}
+
+	var totalTemp float64
+	var totalHumidity float64
+	var totalCO2 float64
+	var co2Count int
+	minTemp := math.Inf(1)
+	maxTemp := math.Inf(-1)
+	minHumidity := math.Inf(1)
+	maxHumidity := math.Inf(-1)
+
+	for _, m := range measurements {
+		totalTemp += m.Temperature
+		totalHumidity += m.Humidity
+		minTemp = math.Min(minTemp, m.Temperature)
+		maxTemp = math.Max(maxTemp, m.Temperature)
+		minHumidity = math.Min(minHumidity, m.Humidity)
+		maxHumidity = math.Max(maxHumidity, m.Humidity)
+		if m.CO2 != nil {
+			totalCO2 += *m.CO2
+			co2Count++
+		}
+	}
+
+	stats := &application.RoomStatsDTO{
+		AvgTemperature: totalTemp / float64(len(measurements)),
+		AvgHumidity:    totalHumidity / float64(len(measurements)),
+		MinTemperature: minTemp,
+		MaxTemperature: maxTemp,
+		MinHumidity:    minHumidity,
+		MaxHumidity:    maxHumidity,
+		SampleCount:    len(measurements),
+	}
+	if co2Count > 0 {
+		avg := totalCO2 / float64(co2Count)
+		stats.AvgCO2 = &avg
+	}
+
+	return stats, nil
 }
 
 func (s *Server) buildRoomDetailView(ctx context.Context, roomID string) (*roomDetailView, error) {
