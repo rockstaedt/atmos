@@ -53,11 +53,11 @@
                 <div class="metrics compact">
                     <div class="metric compact">
                         <span>Temperature</span>
-                        <strong class="accent-cool">{{printf "%.1f" .Stats.AvgTemperature}}°C</strong>
+                        <strong class="accent-cool trend-{{.Stats.TemperatureTrend}}">{{printf "%.1f" .Stats.AvgTemperature}}°C</strong>
                     </div>
                     <div class="metric compact">
                         <span>Humidity</span>
-                        <strong class="accent">{{printf "%.1f" .Stats.AvgHumidity}}%</strong>
+                        <strong class="accent trend-{{.Stats.HumidityTrend}}">{{printf "%.1f" .Stats.AvgHumidity}}%</strong>
                     </div>
                     <div class="metric compact">
                         <span>Temp Range</span>

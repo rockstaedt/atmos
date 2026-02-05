@@ -94,17 +94,39 @@ func (s *Server) buildRoomStats(ctx context.Context, roomID string, duration tim
 	}
 
 	stats := &application.RoomStatsDTO{
-		AvgTemperature: totalTemp / float64(len(measurements)),
-		AvgHumidity:    totalHumidity / float64(len(measurements)),
-		MinTemperature: minTemp,
-		MaxTemperature: maxTemp,
-		MinHumidity:    minHumidity,
-		MaxHumidity:    maxHumidity,
-		SampleCount:    len(measurements),
+		AvgTemperature:   totalTemp / float64(len(measurements)),
+		AvgHumidity:      totalHumidity / float64(len(measurements)),
+		MinTemperature:   minTemp,
+		MaxTemperature:   maxTemp,
+		MinHumidity:      minHumidity,
+		MaxHumidity:      maxHumidity,
+		TemperatureTrend: "stable",
+		HumidityTrend:    "stable",
+		SampleCount:      len(measurements),
 	}
 	if co2Count > 0 {
 		avg := totalCO2 / float64(co2Count)
 		stats.AvgCO2 = &avg
+	}
+
+	// Calculate trends by comparing first vs last measurement
+	if len(measurements) >= 2 {
+		first := measurements[0]
+		last := measurements[len(measurements)-1]
+
+		tempDiff := last.Temperature - first.Temperature
+		if tempDiff > 0.5 {
+			stats.TemperatureTrend = "rising"
+		} else if tempDiff < -0.5 {
+			stats.TemperatureTrend = "falling"
+		}
+
+		humidityDiff := last.Humidity - first.Humidity
+		if humidityDiff > 2 {
+			stats.HumidityTrend = "rising"
+		} else if humidityDiff < -2 {
+			stats.HumidityTrend = "falling"
+		}
 	}
 
 	return stats, nil
