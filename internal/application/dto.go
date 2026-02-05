@@ -51,5 +51,6 @@ type RoomCardDTO struct {
 	Pressure        float64       `json:"pressure"`
 	CO2             *float64      `json:"co2,omitempty"`
 	LastMeasurement time.Time     `json:"last_measurement"`
+	SensorHealth    string        `json:"sensor_health"`
 	Stats           *RoomStatsDTO `json:"stats,omitempty"`
 }

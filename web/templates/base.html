@@ -257,6 +257,18 @@
         .trend-falling::after { content: " ↓"; color: var(--accent-cool); }
         .trend-stable::after { content: " →"; color: var(--muted); }
 
+        .health-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .health-healthy { background: rgba(15, 118, 110, 0.15); color: var(--accent); }
+        .health-delayed { background: rgba(224, 122, 47, 0.15); color: var(--accent-warm); }
+        .health-offline { background: rgba(220, 38, 38, 0.15); color: #dc2626; }
+
         .button {
             display: inline-flex;
             align-items: center;

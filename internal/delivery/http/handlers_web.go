@@ -37,6 +37,19 @@ func (s *Server) buildDashboardDTO(ctx context.Context) (*application.DashboardD
 		if err != nil {
 			return nil, err
 		}
+
+		// Calculate sensor health based on time since last measurement
+		timeSince := time.Since(m.Timestamp)
+		var health string
+		switch {
+		case timeSince < 5*time.Minute:
+			health = "healthy"
+		case timeSince < 15*time.Minute:
+			health = "delayed"
+		default:
+			health = "offline"
+		}
+
 		roomCards = append(roomCards, &application.RoomCardDTO{
 			ID:              roomID,
 			Name:            roomID, // Can be enhanced later
@@ -45,6 +58,7 @@ func (s *Server) buildDashboardDTO(ctx context.Context) (*application.DashboardD
 			Pressure:        m.Pressure,
 			CO2:             m.CO2,
 			LastMeasurement: m.Timestamp,
+			SensorHealth:    health,
 			Stats:           stats,
 		})
 	}
