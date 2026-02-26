@@ -106,6 +106,7 @@ void sendMeasurement() {
   client.setTimeout(15); // seconds (not milliseconds)
 
   HTTPClient https;
+  https.setTimeout(10000); // 10 s HTTP timeout (ms)
   if (!https.begin(client, API_URL)) {
     Serial.println("HTTPS begin failed");
     return;
