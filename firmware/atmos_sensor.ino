@@ -55,12 +55,11 @@ void setup() {
   Serial.println(" time ok");
 }
 
-String getIsoTimestampUtc() {
+bool getIsoTimestampUtc(char* buf, size_t len) {
   struct tm timeinfo;
-  if (!getLocalTime(&timeinfo, 1000)) return "";
-  char buf[25];
-  strftime(buf, sizeof(buf), "%Y-%m-%dT%H:%M:%SZ", &timeinfo);
-  return String(buf);
+  if (!getLocalTime(&timeinfo, 1000)) return false;
+  strftime(buf, len, "%Y-%m-%dT%H:%M:%SZ", &timeinfo);
+  return true;
 }
 
 void loop() {
@@ -89,17 +88,20 @@ void sendMeasurement() {
   float temperature = bme.readTemperature();
   float humidity = bme.readHumidity();
   float pressure = bme.readPressure() / 100.0f;
-  String timestamp = getIsoTimestampUtc();
 
-  String payload = "{";
-  payload += "\"temperature\":" + String(temperature, 2) + ",";
-  payload += "\"humidity\":" + String(humidity, 2) + ",";
-  payload += "\"pressure\":" + String(pressure, 2) + ",";
-  payload += "\"room_id\":\"" + String(ROOM_ID) + "\"";
-  if (timestamp.length() > 0) {
-    payload += ",\"timestamp\":\"" + timestamp + "\"";
+  char timestamp[25] = "";
+  bool hasTimestamp = getIsoTimestampUtc(timestamp, sizeof(timestamp));
+
+  char payload[256];
+  if (hasTimestamp) {
+    snprintf(payload, sizeof(payload),
+      "{\"temperature\":%.2f,\"humidity\":%.2f,\"pressure\":%.2f,\"room_id\":\"%s\",\"timestamp\":\"%s\"}",
+      temperature, humidity, pressure, ROOM_ID, timestamp);
+  } else {
+    snprintf(payload, sizeof(payload),
+      "{\"temperature\":%.2f,\"humidity\":%.2f,\"pressure\":%.2f,\"room_id\":\"%s\"}",
+      temperature, humidity, pressure, ROOM_ID);
   }
-  payload += "}";
 
   WiFiClientSecure client;
   client.setInsecure();
@@ -115,7 +117,7 @@ void sendMeasurement() {
   https.addHeader("Content-Type", "application/json");
   https.addHeader("Authorization", String("Bearer ") + API_TOKEN);
 
-  int code = https.POST(payload);
+  int code = https.POST((uint8_t*)payload, strlen(payload));
   if (code < 0) {
     Serial.printf("HTTP error: %s\n", https.errorToString(code).c_str());
   } else {
