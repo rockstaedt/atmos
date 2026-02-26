@@ -28,3 +28,4 @@ coverage.html
 /.claude/
 /remote/
 /server
+/firmware/.secrets
