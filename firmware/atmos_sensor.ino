@@ -26,7 +26,12 @@ void setup() {
   delay(200);
 
   // Hardware watchdog: reset if stuck for more than 120 seconds
-  esp_task_wdt_init(120, true);
+  esp_task_wdt_config_t wdt_config = {
+    .timeout_ms    = 120000,
+    .idle_core_mask = 0,
+    .trigger_panic  = true
+  };
+  esp_task_wdt_reconfigure(&wdt_config);
   esp_task_wdt_add(NULL);
 
   Wire.begin();
