@@ -69,14 +69,6 @@ void sendMeasurement() {
     return;
   }
 
-  WiFiClient clientss;
-  if (!clientss.connect("atmos.rockstaedt.de", 443)) {
-    Serial.println("TCP connect failed");
-    return;
-  }
-  Serial.println("TCP connected");
-  clientss.stop();
-
   float temperature = bme.readTemperature();
   float humidity = bme.readHumidity();
   float pressure = bme.readPressure() / 100.0f;
