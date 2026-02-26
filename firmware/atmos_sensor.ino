@@ -65,8 +65,17 @@ void loop() {
 
 void sendMeasurement() {
   if (WiFi.status() != WL_CONNECTED) {
-    Serial.println("WiFi not connected");
-    return;
+    Serial.println("WiFi lost, reconnecting...");
+    WiFi.disconnect();
+    WiFi.begin(WIFI_SSID, WIFI_PASS);
+    unsigned long start = millis();
+    while (WiFi.status() != WL_CONNECTED && millis() - start < 20000) {
+      delay(500);
+    }
+    if (WiFi.status() != WL_CONNECTED) {
+      Serial.println("Reconnect failed, restarting...");
+      ESP.restart();
+    }
   }
 
   float temperature = bme.readTemperature();
