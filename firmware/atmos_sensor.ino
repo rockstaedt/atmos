@@ -86,7 +86,7 @@ void sendMeasurement() {
 
   WiFiClientSecure client;
   client.setInsecure();
-  client.setTimeout(15000);
+  client.setTimeout(15); // seconds (not milliseconds)
 
   HTTPClient https;
   if (!https.begin(client, API_URL)) {
