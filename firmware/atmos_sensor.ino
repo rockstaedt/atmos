@@ -8,9 +8,9 @@
 
 const char* WIFI_SSID = "x"; // 2.4 GHz SSID
 const char* WIFI_PASS = "x";
-
 const char* API_URL = "x";
 const char* API_TOKEN = "x";
+const char* ROOM_ID = "Schlafzimmer";
 
 Adafruit_BME280 bme;
 
@@ -95,7 +95,7 @@ void sendMeasurement() {
   payload += "\"temperature\":" + String(temperature, 2) + ",";
   payload += "\"humidity\":" + String(humidity, 2) + ",";
   payload += "\"pressure\":" + String(pressure, 2) + ",";
-  payload += "\"room_id\":\"Schlafzimmer\"";
+  payload += "\"room_id\":\"" + String(ROOM_ID) + "\"";
   if (timestamp.length() > 0) {
     payload += ",\"timestamp\":\"" + timestamp + "\"";
   }
