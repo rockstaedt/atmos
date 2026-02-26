@@ -4,6 +4,7 @@
 #include <Wire.h>
 #include <Adafruit_BME280.h>
 #include "time.h"
+#include "esp_task_wdt.h"
 
 const char* WIFI_SSID = "x"; // 2.4 GHz SSID
 const char* WIFI_PASS = "x";
@@ -23,6 +24,10 @@ unsigned long lastSendMs = 0;
 void setup() {
   Serial.begin(115200);
   delay(200);
+
+  // Hardware watchdog: reset if stuck for more than 120 seconds
+  esp_task_wdt_init(120, true);
+  esp_task_wdt_add(NULL);
 
   Wire.begin();
   bool ok = bme.begin(0x76);
@@ -63,6 +68,7 @@ void loop() {
     lastSendMs = millis();
     sendMeasurement();
   }
+  esp_task_wdt_reset();
 }
 
 void sendMeasurement() {
