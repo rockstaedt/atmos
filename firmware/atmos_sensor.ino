@@ -30,6 +30,8 @@ void setup() {
   if (!ok) Serial.println("BME280 not found");
 
   WiFi.mode(WIFI_STA);
+  WiFi.setAutoReconnect(true);
+  WiFi.persistent(false); // don't write credentials to flash on every reconnect
   WiFi.begin(WIFI_SSID, WIFI_PASS);
   Serial.print("WiFi connecting");
   while (WiFi.status() != WL_CONNECTED) {
