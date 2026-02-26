@@ -78,6 +78,7 @@ void sendMeasurement() {
     unsigned long start = millis();
     while (WiFi.status() != WL_CONNECTED && millis() - start < 20000) {
       delay(500);
+      esp_task_wdt_reset();
     }
     if (WiFi.status() != WL_CONNECTED) {
       Serial.println("Reconnect failed, restarting...");
