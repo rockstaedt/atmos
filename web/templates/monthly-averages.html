@@ -43,6 +43,11 @@
         margin-bottom: 16px;
         gap: 12px;
     }
+
+    .table-scroll {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
 </style>
 {{end}}
 
@@ -65,6 +70,7 @@
             <a href="/rooms/{{.RoomID}}" class="button ghost" style="font-size:0.9rem; padding:8px 14px;">View Details</a>
         </div>
         <div class="card" style="padding:0; overflow:hidden;">
+            <div class="table-scroll">
             <table class="monthly-table">
                 <thead>
                     <tr>
@@ -95,6 +101,7 @@
                     {{end}}
                 </tbody>
             </table>
+            </div>
         </div>
     </div>
     {{end}}
