@@ -62,3 +62,14 @@ type Room struct {
 	FirstSeenAt     time.Time
 	LastMeasurement *time.Time
 }
+
+// MonthlyAverage holds aggregated statistics for a room in a given month
+type MonthlyAverage struct {
+	RoomID         string
+	Month          string // "YYYY-MM"
+	AvgTemperature float64
+	AvgHumidity    float64
+	AvgPressure    float64
+	AvgCO2         *float64
+	SampleCount    int
+}
