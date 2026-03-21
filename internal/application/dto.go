@@ -2,6 +2,8 @@ package application
 
 import (
 	"time"
+
+	"github.com/rockstaedt/atmos/internal/domain"
 )
 
 // MeasurementDTO represents the JSON structure from ESP32
@@ -40,6 +42,17 @@ type RoomStatsDTO struct {
 	TemperatureTrend string   `json:"temperature_trend"`
 	HumidityTrend    string   `json:"humidity_trend"`
 	SampleCount      int      `json:"sample_count"`
+}
+
+// RoomMonthlyDTO groups monthly averages by room
+type RoomMonthlyDTO struct {
+	RoomID string
+	Months []*domain.MonthlyAverage
+}
+
+// MonthlyAveragesPageDTO is the view model for the monthly averages page
+type MonthlyAveragesPageDTO struct {
+	Rooms []*RoomMonthlyDTO
 }
 
 // RoomCardDTO represents a room card view model

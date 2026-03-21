@@ -1,6 +1,6 @@
 module github.com/rockstaedt/atmos
 
-go 1.25.4
+go 1.24.7
 
 require modernc.org/sqlite v1.44.3
 

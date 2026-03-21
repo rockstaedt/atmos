@@ -1,0 +1,171 @@
+{{define "title"}}Monthly Averages - Atmos Climate Monitor{{end}}
+
+{{define "head"}}
+<style>
+    .monthly-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.95rem;
+    }
+
+    .monthly-table th {
+        text-align: left;
+        padding: 10px 14px;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: var(--muted);
+        border-bottom: 1px solid var(--stroke);
+    }
+
+    .monthly-table td {
+        padding: 12px 14px;
+        border-bottom: 1px solid rgba(28, 27, 24, 0.05);
+        vertical-align: middle;
+    }
+
+    .monthly-table tr:last-child td {
+        border-bottom: none;
+    }
+
+    .monthly-table tr:hover td {
+        background: var(--surface-2);
+    }
+
+    .room-section {
+        margin-bottom: 32px;
+    }
+
+    .room-section-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 16px;
+        gap: 12px;
+    }
+
+    @media (max-width: 600px) {
+        .monthly-table thead {
+            display: none;
+        }
+
+        .monthly-table tr {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0;
+            padding: 14px 16px;
+            border-bottom: 1px solid rgba(28, 27, 24, 0.08);
+        }
+
+        .monthly-table tr:last-child {
+            border-bottom: none;
+        }
+
+        .monthly-table tr:hover {
+            background: var(--surface-2);
+        }
+
+        .monthly-table td {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            padding: 6px 0;
+            border-bottom: none;
+        }
+
+        .monthly-table td::before {
+            content: attr(data-label);
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: var(--muted);
+            font-family: "IBM Plex Mono", monospace;
+        }
+
+        .monthly-table td:first-child {
+            grid-column: 1 / -1;
+            flex-direction: row;
+            align-items: center;
+            gap: 8px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(28, 27, 24, 0.06);
+            margin-bottom: 4px;
+        }
+
+        .monthly-table td:first-child::before {
+            display: none;
+        }
+
+        .monthly-table td:first-child span {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--ink);
+        }
+    }
+</style>
+{{end}}
+
+{{define "content"}}
+<main class="page fade-in">
+    <div class="hero">
+        <div>
+            <p class="eyebrow">Historical data</p>
+            <h2 class="headline">Monthly Averages</h2>
+            <p class="subhead">Average temperature, humidity, and pressure per month for each room.</p>
+        </div>
+        <a href="/" class="button ghost">← Dashboard</a>
+    </div>
+
+    {{if .Data.Rooms}}
+    {{range .Data.Rooms}}
+    <div class="room-section">
+        <div class="room-section-header">
+            <h3 class="card-title">{{.RoomID}}</h3>
+            <a href="/rooms/{{.RoomID}}" class="button ghost" style="font-size:0.9rem; padding:8px 14px;">View Details</a>
+        </div>
+        <div class="card" style="padding:0; overflow:hidden;">
+            <table class="monthly-table">
+                <thead>
+                    <tr>
+                        <th>Month</th>
+                        <th>Avg Temp (°C)</th>
+                        <th>Avg Humidity (%)</th>
+                        <th>Avg Pressure (hPa)</th>
+                        <th>Avg CO₂ (ppm)</th>
+                        <th>Samples</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{range .Months}}
+                    <tr>
+                        <td><span class="meta">{{.Month}}</span></td>
+                        <td data-label="Temp (°C)"><strong class="accent-cool">{{printf "%.1f" .AvgTemperature}}</strong></td>
+                        <td data-label="Humidity (%)"><strong class="accent">{{printf "%.1f" .AvgHumidity}}</strong></td>
+                        <td data-label="Pressure (hPa)"><strong>{{printf "%.1f" .AvgPressure}}</strong></td>
+                        <td data-label="CO₂ (ppm)">
+                            {{if .AvgCO2}}
+                            <strong class="accent-warm">{{printf "%.0f" (derefFloat .AvgCO2)}}</strong>
+                            {{else}}
+                            <span class="meta">—</span>
+                            {{end}}
+                        </td>
+                        <td data-label="Samples"><span class="meta">{{.SampleCount}}</span></td>
+                    </tr>
+                    {{end}}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {{end}}
+    {{else}}
+    <div class="section" style="text-align:center;">
+        <p class="card-title">No data available yet</p>
+        <p class="subhead">Monthly averages will appear once sensors start sending measurements.</p>
+    </div>
+    {{end}}
+</main>
+{{end}}
+
+{{define "footer"}}
+<span class="meta">{{.Version}}</span>
+{{end}}

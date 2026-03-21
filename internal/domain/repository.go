@@ -18,4 +18,7 @@ type MeasurementRepository interface {
 
 	// GetAllRooms returns all registered rooms with their last measurement time
 	GetAllRooms(ctx context.Context) ([]*Room, error)
+
+	// GetMonthlyAverages returns per-month averages for all rooms, ordered by room then month descending
+	GetMonthlyAverages(ctx context.Context) ([]*MonthlyAverage, error)
 }

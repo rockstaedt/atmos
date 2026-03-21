@@ -69,3 +69,28 @@ func (s *MeasurementService) GetMeasurementHistory(ctx context.Context, roomID s
 func (s *MeasurementService) GetAllRooms(ctx context.Context) ([]*domain.Room, error) {
 	return s.repo.GetAllRooms(ctx)
 }
+
+// GetMonthlyAverages returns per-month averages for all rooms grouped by room
+func (s *MeasurementService) GetMonthlyAverages(ctx context.Context) (*MonthlyAveragesPageDTO, error) {
+	averages, err := s.repo.GetMonthlyAverages(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get monthly averages: %w", err)
+	}
+
+	// Group by room, preserving order
+	roomIndex := make(map[string]int)
+	var rooms []*RoomMonthlyDTO
+
+	for _, avg := range averages {
+		idx, ok := roomIndex[avg.RoomID]
+		if !ok {
+			idx = len(rooms)
+			roomIndex[avg.RoomID] = idx
+			rooms = append(rooms, &RoomMonthlyDTO{RoomID: avg.RoomID})
+		}
+
+		rooms[idx].Months = append(rooms[idx].Months, avg)
+	}
+
+	return &MonthlyAveragesPageDTO{Rooms: rooms}, nil
+}

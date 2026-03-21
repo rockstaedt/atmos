@@ -25,7 +25,8 @@ type mockMeasurementService struct {
 	recordMeasurementFn     func(ctx context.Context, m *domain.Measurement) error
 	getLatestMeasurementsFn func(ctx context.Context) (map[string]*domain.Measurement, error)
 	getMeasurementHistoryFn func(ctx context.Context, roomID string, duration time.Duration) ([]*domain.Measurement, error)
-	getAllRoomsFn           func(ctx context.Context) ([]*domain.Room, error)
+	getAllRoomsFn            func(ctx context.Context) ([]*domain.Room, error)
+	getMonthlyAveragesFn    func(ctx context.Context) (*application.MonthlyAveragesPageDTO, error)
 }
 
 func (m *mockMeasurementService) RecordMeasurement(ctx context.Context, measurement *domain.Measurement) error {
@@ -54,6 +55,13 @@ func (m *mockMeasurementService) GetAllRooms(ctx context.Context) ([]*domain.Roo
 		return m.getAllRoomsFn(ctx)
 	}
 	return nil, nil
+}
+
+func (m *mockMeasurementService) GetMonthlyAverages(ctx context.Context) (*application.MonthlyAveragesPageDTO, error) {
+	if m.getMonthlyAveragesFn != nil {
+		return m.getMonthlyAveragesFn(ctx)
+	}
+	return &application.MonthlyAveragesPageDTO{}, nil
 }
 
 // Mock session repository
