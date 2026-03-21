@@ -124,7 +124,7 @@ func (r *MeasurementRepository) GetMonthlyAverages(ctx context.Context) ([]*doma
 	rows, err := r.db.QueryContext(ctx, `
 		SELECT
 			room_id,
-			strftime('%Y-%m', timestamp) AS month,
+			substr(timestamp, 1, 7) AS month,
 			AVG(temperature),
 			AVG(humidity),
 			AVG(pressure),
