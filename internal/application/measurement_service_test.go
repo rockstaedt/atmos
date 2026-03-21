@@ -14,7 +14,8 @@ type mockMeasurementRepository struct {
 	saveFn                  func(ctx context.Context, m *domain.Measurement) error
 	getLatestByRoomFn       func(ctx context.Context, roomID string) (*domain.Measurement, error)
 	getByRoomAndTimeRangeFn func(ctx context.Context, roomID string, start, end time.Time) ([]*domain.Measurement, error)
-	getAllRoomsFn           func(ctx context.Context) ([]*domain.Room, error)
+	getAllRoomsFn            func(ctx context.Context) ([]*domain.Room, error)
+	getMonthlyAveragesFn    func(ctx context.Context) ([]*domain.MonthlyAverage, error)
 }
 
 func (m *mockMeasurementRepository) Save(ctx context.Context, measurement *domain.Measurement) error {
@@ -46,6 +47,9 @@ func (m *mockMeasurementRepository) GetAllRooms(ctx context.Context) ([]*domain.
 }
 
 func (m *mockMeasurementRepository) GetMonthlyAverages(ctx context.Context) ([]*domain.MonthlyAverage, error) {
+	if m.getMonthlyAveragesFn != nil {
+		return m.getMonthlyAveragesFn(ctx)
+	}
 	return nil, nil
 }
 
@@ -258,5 +262,90 @@ func TestMeasurementService_GetAllRooms(t *testing.T) {
 
 	if result[0].ID != "room1" {
 		t.Errorf("Expected first room ID 'room1', got %s", result[0].ID)
+	}
+}
+
+func TestMeasurementService_GetMonthlyAverages(t *testing.T) {
+	co2 := 450.0
+	repo := &mockMeasurementRepository{
+		getMonthlyAveragesFn: func(ctx context.Context) ([]*domain.MonthlyAverage, error) {
+			return []*domain.MonthlyAverage{
+				{RoomID: "bedroom", Month: "2025-02", AvgTemperature: 20.0, AvgHumidity: 45.0, AvgPressure: 1013.0, SampleCount: 10},
+				{RoomID: "bedroom", Month: "2025-01", AvgTemperature: 18.0, AvgHumidity: 50.0, AvgPressure: 1015.0, SampleCount: 8},
+				{RoomID: "kitchen", Month: "2025-02", AvgTemperature: 22.0, AvgHumidity: 55.0, AvgPressure: 1012.0, AvgCO2: &co2, SampleCount: 5},
+			}, nil
+		},
+	}
+
+	service := NewMeasurementService(repo)
+	result, err := service.GetMonthlyAverages(context.Background())
+
+	if err != nil {
+		t.Fatalf("GetMonthlyAverages() error = %v", err)
+	}
+
+	if len(result.Rooms) != 2 {
+		t.Fatalf("Expected 2 rooms, got %d", len(result.Rooms))
+	}
+
+	// Rooms should be in order returned by repo (bedroom first, kitchen second)
+	bedroom := result.Rooms[0]
+	if bedroom.RoomID != "bedroom" {
+		t.Errorf("Expected first room 'bedroom', got %s", bedroom.RoomID)
+	}
+	if len(bedroom.Months) != 2 {
+		t.Errorf("Expected 2 months for bedroom, got %d", len(bedroom.Months))
+	}
+	if bedroom.Months[0].Month != "2025-02" {
+		t.Errorf("Expected first month '2025-02', got %s", bedroom.Months[0].Month)
+	}
+	if bedroom.Months[0].AvgTemperature != 20.0 {
+		t.Errorf("Expected avg temperature 20.0, got %f", bedroom.Months[0].AvgTemperature)
+	}
+
+	kitchen := result.Rooms[1]
+	if kitchen.RoomID != "kitchen" {
+		t.Errorf("Expected second room 'kitchen', got %s", kitchen.RoomID)
+	}
+	if len(kitchen.Months) != 1 {
+		t.Errorf("Expected 1 month for kitchen, got %d", len(kitchen.Months))
+	}
+	if kitchen.Months[0].AvgCO2 == nil {
+		t.Error("Expected CO2 to be set for kitchen")
+	} else if *kitchen.Months[0].AvgCO2 != 450.0 {
+		t.Errorf("Expected CO2 450.0, got %f", *kitchen.Months[0].AvgCO2)
+	}
+}
+
+func TestMeasurementService_GetMonthlyAverages_Empty(t *testing.T) {
+	repo := &mockMeasurementRepository{
+		getMonthlyAveragesFn: func(ctx context.Context) ([]*domain.MonthlyAverage, error) {
+			return nil, nil
+		},
+	}
+
+	service := NewMeasurementService(repo)
+	result, err := service.GetMonthlyAverages(context.Background())
+
+	if err != nil {
+		t.Fatalf("GetMonthlyAverages() error = %v", err)
+	}
+	if len(result.Rooms) != 0 {
+		t.Errorf("Expected 0 rooms, got %d", len(result.Rooms))
+	}
+}
+
+func TestMeasurementService_GetMonthlyAverages_Error(t *testing.T) {
+	repo := &mockMeasurementRepository{
+		getMonthlyAveragesFn: func(ctx context.Context) ([]*domain.MonthlyAverage, error) {
+			return nil, errors.New("database error")
+		},
+	}
+
+	service := NewMeasurementService(repo)
+	_, err := service.GetMonthlyAverages(context.Background())
+
+	if err == nil {
+		t.Error("Expected error, got nil")
 	}
 }

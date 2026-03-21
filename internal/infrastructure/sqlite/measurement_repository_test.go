@@ -334,3 +334,95 @@ func TestMeasurementRepository_AutoRegistration(t *testing.T) {
 		t.Errorf("Expected LastMeasurement to be close to now, diff: %v", timeDiff)
 	}
 }
+
+func TestMeasurementRepository_GetMonthlyAverages(t *testing.T) {
+	db := setupTestDB(t)
+	defer func() { _ = db.Close() }()
+
+	repo := NewMeasurementRepository(db)
+	ctx := context.Background()
+
+	jan := time.Date(2025, 1, 15, 12, 0, 0, 0, time.UTC)
+	feb := time.Date(2025, 2, 15, 12, 0, 0, 0, time.UTC)
+	co2 := 400.0
+
+	measurements := []*domain.Measurement{
+		// bedroom: two measurements in January
+		{RoomID: "bedroom", Timestamp: jan, Temperature: 18.0, Humidity: 50.0, Pressure: 1015.0},
+		{RoomID: "bedroom", Timestamp: jan.Add(24 * time.Hour), Temperature: 20.0, Humidity: 52.0, Pressure: 1013.0},
+		// bedroom: one measurement in February
+		{RoomID: "bedroom", Timestamp: feb, Temperature: 21.0, Humidity: 48.0, Pressure: 1012.0},
+		// kitchen: one measurement in January with CO2
+		{RoomID: "kitchen", Timestamp: jan, Temperature: 22.0, Humidity: 55.0, Pressure: 1014.0, CO2: &co2},
+	}
+
+	for _, m := range measurements {
+		if err := repo.Save(ctx, m); err != nil {
+			t.Fatalf("Save failed: %v", err)
+		}
+	}
+
+	results, err := repo.GetMonthlyAverages(ctx)
+	if err != nil {
+		t.Fatalf("GetMonthlyAverages() error = %v", err)
+	}
+
+	// Expect 3 rows: bedroom/2025-02, bedroom/2025-01, kitchen/2025-01
+	if len(results) != 3 {
+		t.Fatalf("Expected 3 results, got %d", len(results))
+	}
+
+	// Results are ordered by room ASC, month DESC
+	// bedroom 2025-02
+	r := results[0]
+	if r.RoomID != "bedroom" || r.Month != "2025-02" {
+		t.Errorf("Expected bedroom/2025-02, got %s/%s", r.RoomID, r.Month)
+	}
+	if r.SampleCount != 1 {
+		t.Errorf("Expected 1 sample, got %d", r.SampleCount)
+	}
+	if r.AvgTemperature != 21.0 {
+		t.Errorf("Expected avg temperature 21.0, got %f", r.AvgTemperature)
+	}
+
+	// bedroom 2025-01 (avg of 18.0 and 20.0 = 19.0)
+	r = results[1]
+	if r.RoomID != "bedroom" || r.Month != "2025-01" {
+		t.Errorf("Expected bedroom/2025-01, got %s/%s", r.RoomID, r.Month)
+	}
+	if r.SampleCount != 2 {
+		t.Errorf("Expected 2 samples, got %d", r.SampleCount)
+	}
+	if r.AvgTemperature != 19.0 {
+		t.Errorf("Expected avg temperature 19.0, got %f", r.AvgTemperature)
+	}
+	if r.AvgCO2 != nil {
+		t.Error("Expected no CO2 for bedroom")
+	}
+
+	// kitchen 2025-01
+	r = results[2]
+	if r.RoomID != "kitchen" || r.Month != "2025-01" {
+		t.Errorf("Expected kitchen/2025-01, got %s/%s", r.RoomID, r.Month)
+	}
+	if r.AvgCO2 == nil {
+		t.Error("Expected CO2 for kitchen")
+	} else if *r.AvgCO2 != 400.0 {
+		t.Errorf("Expected CO2 400.0, got %f", *r.AvgCO2)
+	}
+}
+
+func TestMeasurementRepository_GetMonthlyAverages_Empty(t *testing.T) {
+	db := setupTestDB(t)
+	defer func() { _ = db.Close() }()
+
+	repo := NewMeasurementRepository(db)
+
+	results, err := repo.GetMonthlyAverages(context.Background())
+	if err != nil {
+		t.Fatalf("GetMonthlyAverages() error = %v", err)
+	}
+	if len(results) != 0 {
+		t.Errorf("Expected 0 results, got %d", len(results))
+	}
+}
