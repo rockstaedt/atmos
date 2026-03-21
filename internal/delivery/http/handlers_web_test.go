@@ -8,7 +8,20 @@ import (
 	"testing"
 
 	"github.com/rockstaedt/atmos/internal/application"
+	"github.com/rockstaedt/atmos/web"
 )
+
+func TestNewServer_ParsesAllTemplates(t *testing.T) {
+	_, err := NewServer(Config{
+		Assets:       web.Files,
+		APIKey:       testAPIKey,
+		DashboardKey: testDashboardKey,
+	}, &mockMeasurementService{})
+
+	if err != nil {
+		t.Fatalf("NewServer() failed to parse templates: %v", err)
+	}
+}
 
 func TestHandleMonthlyAverages_Unauthenticated(t *testing.T) {
 	server := &Server{
