@@ -89,15 +89,7 @@ func (s *MeasurementService) GetMonthlyAverages(ctx context.Context) (*MonthlyAv
 			rooms = append(rooms, &RoomMonthlyDTO{RoomID: avg.RoomID})
 		}
 
-		dto := &MonthlyAverageDTO{
-			Month:          avg.Month,
-			AvgTemperature: avg.AvgTemperature,
-			AvgHumidity:    avg.AvgHumidity,
-			AvgPressure:    avg.AvgPressure,
-			AvgCO2:         avg.AvgCO2,
-			SampleCount:    avg.SampleCount,
-		}
-		rooms[idx].Months = append(rooms[idx].Months, dto)
+		rooms[idx].Months = append(rooms[idx].Months, avg)
 	}
 
 	return &MonthlyAveragesPageDTO{Rooms: rooms}, nil
