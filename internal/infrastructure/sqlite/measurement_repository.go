@@ -120,6 +120,49 @@ func (r *MeasurementRepository) GetByRoomAndTimeRange(ctx context.Context, roomI
 	return measurements, nil
 }
 
+func (r *MeasurementRepository) GetMonthlyAverages(ctx context.Context) ([]*domain.MonthlyAverage, error) {
+	rows, err := r.db.QueryContext(ctx, `
+		SELECT
+			room_id,
+			strftime('%Y-%m', timestamp) AS month,
+			AVG(temperature),
+			AVG(humidity),
+			AVG(pressure),
+			AVG(co2),
+			COUNT(*)
+		FROM measurements
+		GROUP BY room_id, month
+		ORDER BY room_id ASC, month DESC
+	`)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query monthly averages: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	var averages []*domain.MonthlyAverage
+	for rows.Next() {
+		avg := &domain.MonthlyAverage{}
+		var co2 sql.NullFloat64
+
+		err := rows.Scan(&avg.RoomID, &avg.Month, &avg.AvgTemperature, &avg.AvgHumidity, &avg.AvgPressure, &co2, &avg.SampleCount)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan monthly average: %w", err)
+		}
+
+		if co2.Valid {
+			avg.AvgCO2 = &co2.Float64
+		}
+
+		averages = append(averages, avg)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating monthly averages: %w", err)
+	}
+
+	return averages, nil
+}
+
 func (r *MeasurementRepository) GetAllRooms(ctx context.Context) ([]*domain.Room, error) {
 	rows, err := r.db.QueryContext(ctx, `
 		SELECT id, name, first_seen_at, last_measurement_at
