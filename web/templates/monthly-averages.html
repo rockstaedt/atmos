@@ -1,0 +1,112 @@
+{{define "title"}}Monthly Averages - Atmos Climate Monitor{{end}}
+
+{{define "head"}}
+<style>
+    .monthly-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.95rem;
+    }
+
+    .monthly-table th {
+        text-align: left;
+        padding: 10px 14px;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: var(--muted);
+        border-bottom: 1px solid var(--stroke);
+    }
+
+    .monthly-table td {
+        padding: 12px 14px;
+        border-bottom: 1px solid rgba(28, 27, 24, 0.05);
+        vertical-align: middle;
+    }
+
+    .monthly-table tr:last-child td {
+        border-bottom: none;
+    }
+
+    .monthly-table tr:hover td {
+        background: var(--surface-2);
+    }
+
+    .room-section {
+        margin-bottom: 32px;
+    }
+
+    .room-section-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 16px;
+        gap: 12px;
+    }
+</style>
+{{end}}
+
+{{define "content"}}
+<main class="page fade-in">
+    <div class="hero">
+        <div>
+            <p class="eyebrow">Historical data</p>
+            <h2 class="headline">Monthly Averages</h2>
+            <p class="subhead">Average temperature, humidity, and pressure per month for each room.</p>
+        </div>
+        <a href="/" class="button ghost">← Dashboard</a>
+    </div>
+
+    {{if .Data.Rooms}}
+    {{range .Data.Rooms}}
+    <div class="room-section">
+        <div class="room-section-header">
+            <h3 class="card-title">{{.RoomID}}</h3>
+            <a href="/rooms/{{.RoomID}}" class="button ghost" style="font-size:0.9rem; padding:8px 14px;">View Details</a>
+        </div>
+        <div class="card" style="padding:0; overflow:hidden;">
+            <table class="monthly-table">
+                <thead>
+                    <tr>
+                        <th>Month</th>
+                        <th>Avg Temp (°C)</th>
+                        <th>Avg Humidity (%)</th>
+                        <th>Avg Pressure (hPa)</th>
+                        <th>Avg CO₂ (ppm)</th>
+                        <th>Samples</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{range .Months}}
+                    <tr>
+                        <td><span class="meta">{{.Month}}</span></td>
+                        <td><strong class="accent-cool">{{printf "%.1f" .AvgTemperature}}</strong></td>
+                        <td><strong class="accent">{{printf "%.1f" .AvgHumidity}}</strong></td>
+                        <td><strong>{{printf "%.1f" .AvgPressure}}</strong></td>
+                        <td>
+                            {{if .AvgCO2}}
+                            <strong class="accent-warm">{{printf "%.0f" (derefFloat .AvgCO2)}}</strong>
+                            {{else}}
+                            <span class="meta">—</span>
+                            {{end}}
+                        </td>
+                        <td><span class="meta">{{.SampleCount}}</span></td>
+                    </tr>
+                    {{end}}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {{end}}
+    {{else}}
+    <div class="section" style="text-align:center;">
+        <p class="card-title">No data available yet</p>
+        <p class="subhead">Monthly averages will appear once sensors start sending measurements.</p>
+    </div>
+    {{end}}
+</main>
+{{end}}
+
+{{define "footer"}}
+<span class="meta">{{.Version}}</span>
+{{end}}
