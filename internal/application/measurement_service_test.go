@@ -45,6 +45,10 @@ func (m *mockMeasurementRepository) GetAllRooms(ctx context.Context) ([]*domain.
 	return nil, nil
 }
 
+func (m *mockMeasurementRepository) GetMonthlyAverages(ctx context.Context) ([]*domain.MonthlyAverage, error) {
+	return nil, nil
+}
+
 func TestMeasurementService_RecordMeasurement(t *testing.T) {
 	tests := []struct {
 		name        string

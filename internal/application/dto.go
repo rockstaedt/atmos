@@ -42,6 +42,27 @@ type RoomStatsDTO struct {
 	SampleCount      int      `json:"sample_count"`
 }
 
+// MonthlyAverageDTO holds aggregated stats for a single month
+type MonthlyAverageDTO struct {
+	Month          string
+	AvgTemperature float64
+	AvgHumidity    float64
+	AvgPressure    float64
+	AvgCO2         *float64
+	SampleCount    int
+}
+
+// RoomMonthlyDTO groups monthly averages by room
+type RoomMonthlyDTO struct {
+	RoomID string
+	Months []*MonthlyAverageDTO
+}
+
+// MonthlyAveragesPageDTO is the view model for the monthly averages page
+type MonthlyAveragesPageDTO struct {
+	Rooms []*RoomMonthlyDTO
+}
+
 // RoomCardDTO represents a room card view model
 type RoomCardDTO struct {
 	ID              string        `json:"id"`
