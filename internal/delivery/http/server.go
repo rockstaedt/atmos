@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/rockstaedt/atmos/internal/application"
 	"github.com/rockstaedt/atmos/internal/domain"
 )
 
@@ -24,6 +25,7 @@ type MeasurementService interface {
 	GetLatestMeasurements(ctx context.Context) (map[string]*domain.Measurement, error)
 	GetMeasurementHistory(ctx context.Context, roomID string, duration time.Duration) ([]*domain.Measurement, error)
 	GetAllRooms(ctx context.Context) ([]*domain.Room, error)
+	GetMonthlyAverages(ctx context.Context) (*application.MonthlyAveragesPageDTO, error)
 }
 
 // SessionRepository defines the interface for session persistence
@@ -116,6 +118,15 @@ func NewServer(cfg Config, service MeasurementService) (*Server, error) {
 	}
 	templates["room-detail-fragment.html"] = roomDetailFragmentTmpl
 
+	monthlyTmpl, err := parseTemplates("base.html",
+		"templates/base.html",
+		"templates/monthly-averages.html",
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load monthly averages template: %w", err)
+	}
+	templates["monthly-averages.html"] = monthlyTmpl
+
 	loginTmpl, err := parseTemplates("base.html",
 		"templates/base.html",
 		"templates/login.html",
@@ -160,6 +171,7 @@ func (s *Server) routes(staticFS fs.FS) {
 
 	// Web UI endpoints (protected by dashboard auth)
 	s.mux.HandleFunc("GET /", s.requireDashboardAuth(s.handleDashboard))
+	s.mux.HandleFunc("GET /monthly", s.requireDashboardAuth(s.handleMonthlyAverages))
 	s.mux.HandleFunc("GET /rooms/{roomID}", s.requireDashboardAuth(s.handleRoomDetail))
 	s.mux.HandleFunc("GET /partials/dashboard", s.requireDashboardAuth(s.handleDashboardFragment))
 	s.mux.HandleFunc("GET /partials/rooms/{roomID}", s.requireDashboardAuth(s.handleRoomDetailFragment))

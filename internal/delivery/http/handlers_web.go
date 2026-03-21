@@ -224,6 +224,22 @@ func (s *Server) handleRoomDetail(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (s *Server) handleMonthlyAverages(w http.ResponseWriter, r *http.Request) {
+	data, err := s.service.GetMonthlyAverages(r.Context())
+	if err != nil {
+		log.Printf("Failed to build monthly averages: %v", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	tmpl := s.templates["monthly-averages.html"]
+	if err := tmpl.ExecuteTemplate(w, "base", pageData{Data: data, Version: s.version}); err != nil {
+		log.Printf("Failed to render monthly averages template: %v", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+	}
+}
+
 func (s *Server) handleRoomDetailFragment(w http.ResponseWriter, r *http.Request) {
 	roomID := r.PathValue("roomID")
 

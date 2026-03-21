@@ -56,6 +56,10 @@ func (m *mockMeasurementService) GetAllRooms(ctx context.Context) ([]*domain.Roo
 	return nil, nil
 }
 
+func (m *mockMeasurementService) GetMonthlyAverages(ctx context.Context) (*application.MonthlyAveragesPageDTO, error) {
+	return &application.MonthlyAveragesPageDTO{}, nil
+}
+
 // Mock session repository
 type mockSession struct {
 	Token     string
